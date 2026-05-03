@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>로그인 — AKL Calendar</title>
+<style>
+  :root {
+    --accent: #10b981;
+    --bg: #0d1829;
+    --panel: #0f1d33;
+    --border: #1e3050;
+    --muted: #64748b;
+    --text: #e2e8f0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text); min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+    padding: 32px 28px; width: 100%; max-width: 380px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+  .brand {
+    text-align: center; margin-bottom: 24px;
+  }
+  .brand-icon { font-size: 40px; margin-bottom: 8px; }
+  .brand-title { font-size: 22px; font-weight: 700; color: var(--text); }
+  .brand-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .tabs {
+    display: flex; gap: 4px; margin-bottom: 20px;
+    background: var(--bg); padding: 4px; border-radius: 8px;
+  }
+  .tab {
+    flex: 1; padding: 8px; background: transparent; border: none;
+    color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 600;
+    border-radius: 6px;
+  }
+  .tab.active { background: var(--accent); color: #fff; }
+  .field { margin-bottom: 12px; }
+  .field-label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .field-input {
+    width: 100%; padding: 11px 14px; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 8px; color: var(--text);
+    font-size: 14px; outline: none;
+  }
+  .field-input:focus { border-color: var(--accent); }
+  .submit {
+    width: 100%; padding: 12px; background: var(--accent); border: none;
+    color: #fff; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;
+    margin-top: 8px;
+  }
+  .submit:disabled { opacity: 0.5; cursor: not-allowed; }
+  .alert {
+    padding: 10px 12px; border-radius: 8px; font-size: 12px; margin-bottom: 12px;
+  }
+  .alert.err { background: rgba(220,38,38,0.15); color: #f87171; border: 1px solid rgba(220,38,38,0.3); }
+  .alert.ok { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+  .footer { text-align: center; margin-top: 16px; font-size: 11px; color: var(--muted); }
+  .footer a { color: var(--accent); text-decoration: none; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">
+    <div class="brand-icon">🏃</div>
+    <div class="brand-title">AKL Move</div>
+    <div class="brand-sub">걷기/달리기/자전거 GPS 트래커</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" id="tabLogin">로그인</button>
+    <button class="tab" id="tabRegister">회원가입</button>
+  </div>
+
+  <div style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.4);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:11px;line-height:1.6;color:#fbbf24">
+    <b>🚧 서비스 준비 중 (베타)</b><br>
+    <span style="color:var(--muted)">기능과 데이터 구조는 운영 중 변경/업데이트될 수 있습니다.<br>회원가입은 자유롭게 가능하며 모든 *.akl.kr 서비스에 공통 적용됩니다.</span>
+  </div>
+  <div id="alertBox"></div>
+
+  <!-- 로그인 폼 -->
+  <form id="loginForm">
+    <div class="field">
+      <label class="field-label">이메일</label>
+      <input type="email" id="loginEmail" class="field-input" required autocomplete="email" />
+    </div>
+    <div class="field">
+      <label class="field-label">비밀번호</label>
+      <input type="password" id="loginPassword" class="field-input" required autocomplete="current-password" />
+    </div>
+    <button type="submit" class="submit" id="loginBtn">로그인</button>
+  </form>
+
+  <!-- 회원가입 폼 -->
+  <form id="registerForm" class="hidden">
+    <div class="field">
+      <label class="field-label">이름</label>
+      <input type="text" id="regName" class="field-input" required />
+    </div>
+    <div class="field">
+      <label class="field-label">이메일</label>
+      <input type="email" id="regEmail" class="field-input" required autocomplete="email" />
+    </div>
+    <div class="field">
+      <label class="field-label">비밀번호</label>
+      <input type="password" id="regPassword" class="field-input" required minlength="6" autocomplete="new-password" />
+    </div>
+    <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:11px;line-height:1.7">
+      <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer">
+        <input type="checkbox" id="agreeTerms" required style="margin-top:3px">
+        <span><b style="color:var(--text)">[필수]</b> <a href="javascript:void(0)" onclick="showLegal('terms')" style="color:var(--accent);text-decoration:underline">이용약관</a> 동의</span>
+      </label>
+      <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;margin-top:6px">
+        <input type="checkbox" id="agreePrivacy" required style="margin-top:3px">
+        <span><b style="color:var(--text)">[필수]</b> <a href="javascript:void(0)" onclick="showLegal('privacy')" style="color:var(--accent);text-decoration:underline">개인정보 수집·이용</a> 동의 (이메일/이름/운동기록/GPS)</span>
+      </label>
+      <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;margin-top:6px">
+        <input type="checkbox" id="agreeShare" required style="margin-top:3px">
+        <span><b style="color:var(--text)">[필수]</b> <a href="javascript:void(0)" onclick="showLegal('share')" style="color:var(--accent);text-decoration:underline">친구 기능 데이터 공유</a> 안내</span>
+      </label>
+    </div>
+    <button type="submit" class="submit" id="regBtn">가입하기</button>
+  </form>
+
+  <div class="footer">
+    AKL 통합 계정 — 모든 *.akl.kr 서비스 공통<br>
+    <a href="https://akl.kr">akl.kr 메인</a>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+function showAlert(msg, kind = 'err') {
+  $('alertBox').innerHTML = `<div class="alert ${kind}">${msg}</div>`;
+}
+
+function clearAlert() { $('alertBox').innerHTML = ''; }
+
+function switchTab(which) {
+  if (which === 'login') {
+    $('tabLogin').classList.add('active');
+    $('tabRegister').classList.remove('active');
+    $('loginForm').classList.remove('hidden');
+    $('registerForm').classList.add('hidden');
+  } else {
+    $('tabRegister').classList.add('active');
+    $('tabLogin').classList.remove('active');
+    $('registerForm').classList.remove('hidden');
+    $('loginForm').classList.add('hidden');
+  }
+  clearAlert();
+}
+
+$('tabLogin').addEventListener('click', () => switchTab('login'));
+$('tabRegister').addEventListener('click', () => switchTab('register'));
+
+$('loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  clearAlert();
+  $('loginBtn').disabled = true;
+  $('loginBtn').textContent = '로그인 중...';
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: $('loginEmail').value.trim(),
+        password: $('loginPassword').value,
+      }),
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      // localStorage 저장 (mindmap/writer/people 등 호환)
+      if (data.data?.token) {
+        localStorage.setItem('akl_session', JSON.stringify({ token: data.data.token, user: data.data }));
+      } else if (data.token) {
+        localStorage.setItem('akl_session', JSON.stringify({ token: data.token, user: data }));
+      }
+      showAlert('✅ 로그인 성공', 'ok');
+      setTimeout(() => location.href = "/", 400);
+    } else {
+      showAlert(data.error || '로그인 실패');
+    }
+  } catch (e) {
+    showAlert('네트워크 오류: ' + e.message);
+  } finally {
+    $('loginBtn').disabled = false;
+    $('loginBtn').textContent = '로그인';
+  }
+});
+
+$('registerForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  clearAlert();
+  $('regBtn').disabled = true;
+  $('regBtn').textContent = '가입 중...';
+  try {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: $('regName').value.trim(),
+        email: $('regEmail').value.trim(),
+        password: $('regPassword').value,
+      }),
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showAlert('✅ 가입 완료. 로그인해주세요.', 'ok');
+      setTimeout(() => switchTab('login'), 800);
+      $('loginEmail').value = $('regEmail').value;
+    } else {
+      showAlert(data.error || '가입 실패');
+    }
+  } catch (e) {
+    showAlert('네트워크 오류: ' + e.message);
+  } finally {
+    $('regBtn').disabled = false;
+    $('regBtn').textContent = '가입하기';
+  }
+});
+</script>
+
+<div id="legalModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--panel);border:1px solid var(--border);border-radius:12px;max-width:560px;width:100%;max-height:80vh;overflow-y:auto;padding:20px;color:var(--text)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 id="legalTitle" style="font-size:15px;color:var(--accent)"></h3>
+      <button onclick="document.getElementById('legalModal').style.display='none'" style="background:transparent;border:1px solid var(--border);color:var(--muted);width:30px;height:30px;border-radius:6px;cursor:pointer">✕</button>
+    </div>
+    <div id="legalBody" style="font-size:12px;line-height:1.7;color:var(--muted)"></div>
+  </div>
+</div>
+
+<script>
+function showLegal(kind) {
+  const m = document.getElementById('legalModal');
+  const t = document.getElementById('legalTitle');
+  const b = document.getElementById('legalBody');
+  if (kind === 'terms') {
+    t.textContent = '📋 이용약관';
+    b.innerHTML = `
+      <p><b style="color:var(--text)">제1조 (서비스 성격)</b></p>
+      <ul style="padding-left:18px"><li>AKL Move는 김진돌 1인 운영 베타 서비스입니다</li><li>기능/데이터 구조는 사전 통지 없이 변경될 수 있습니다</li><li>서비스 안정성을 보장하지 않습니다 (운영자 임의 중단 가능)</li></ul>
+      <p style="margin-top:10px"><b style="color:var(--text)">제2조 (이용자 책임)</b></p>
+      <ul style="padding-left:18px"><li>운동 중 안전은 본인 책임입니다 (앱은 기록만 제공)</li><li>GPS 정확도는 환경에 따라 다를 수 있습니다</li><li>다른 사용자에게 피해를 주는 행위 금지</li></ul>
+      <p style="margin-top:10px"><b style="color:var(--text)">제3조 (계정)</b></p>
+      <ul style="padding-left:18px"><li>모든 *.akl.kr 서비스에 공통 적용되는 통합 계정입니다</li><li>회원 탈퇴 시 데이터는 삭제됩니다</li></ul>
+    `;
+  } else if (kind === 'privacy') {
+    t.textContent = '🔐 개인정보 수집·이용';
+    b.innerHTML = `
+      <p><b style="color:var(--text)">수집 항목</b></p>
+      <ul style="padding-left:18px"><li>이메일 (필수, 로그인 ID)</li><li>이름 (필수, 표시용)</li><li>비밀번호 (필수, 암호화 저장)</li><li>운동 기록: 종목/거리/시간/칼로리/메모</li><li>GPS 좌표 (운동 중 자동 기록, 본인 화면에서만 경로 표시)</li><li>날씨 (자동 기록, 회상 잔디 용도)</li></ul>
+      <p style="margin-top:10px"><b style="color:var(--text)">이용 목적</b></p>
+      <ul style="padding-left:18px"><li>로그인 인증 / 데이터 격리</li><li>운동 기록 표시 / 통계 / 별점 / 잔디</li></ul>
+      <p style="margin-top:10px"><b style="color:var(--text)">보유 기간</b></p>
+      <ul style="padding-left:18px"><li>회원 탈퇴 시까지 (탈퇴 시 즉시 삭제)</li></ul>
+      <p style="margin-top:10px"><b style="color:var(--text)">제3자 제공</b></p>
+      <ul style="padding-left:18px"><li>없음 (외부 API는 기상청 동네예보 조회용 좌표만 전송)</li></ul>
+    `;
+  } else if (kind === 'share') {
+    t.textContent = '👥 친구 기능 데이터 공유';
+    b.innerHTML = `
+      <p><b style="color:var(--text)">친구가 보는 데이터</b></p>
+      <ul style="padding-left:18px"><li>날짜별 운동 거리/시간/칼로리/날씨/별점</li><li>이번 달 잔디 (집계만)</li></ul>
+      <p style="margin-top:10px"><b style="color:var(--text)">친구가 못 보는 데이터</b></p>
+      <ul style="padding-left:18px"><li>GPS 경로 좌표</li><li>메모/노트 텍스트</li><li>예산/스케줄 정보</li><li>이메일 주소</li></ul>
+      <p style="margin-top:10px"><b style="color:var(--text)">친구 추가 방식</b></p>
+      <ul style="padding-left:18px"><li>상대방의 user_id를 입력해야 추가 가능 (검색 X)</li><li>일방 추가 — 상대방 동의 절차 없음 (가족/지인용 가벼운 모델)</li><li>언제든 친구 삭제 가능</li></ul>
+      <p style="margin-top:10px;color:#fbbf24"><b>⚠️ 본인 user_id를 모르는 사람에게 알려주지 마세요</b></p>
+    `;
+  }
+  m.style.display = 'flex';
+}
+document.addEventListener('click', e => { if (e.target.id === 'legalModal') e.target.style.display = 'none'; });
+</script>
+
+</body>
+</html>

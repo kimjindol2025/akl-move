@@ -1,0 +1,6 @@
+logs/
+node_modules/
+*.log
+.env
+.env.local
+public/posts.json

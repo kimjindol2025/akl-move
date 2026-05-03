@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>🏃 AKL Move</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#10b981">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/icons/icon-192.svg">
+<style>
+:root { --bg:#0f0f1a; --panel:#181828; --border:#2a2a3e; --text:#e6e6f0; --muted:#9ca0b8;
+        --green:#10b981; --accent:#10b981; --gold:#fbbf24; --red:#ef4444; --blue:#3b82f6; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Noto Sans KR', -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+.app { max-width: 720px; margin: 0 auto; padding: 16px; padding-bottom: 90px; }
+.header { display: flex; justify-content: space-between; align-items: center; padding: 8px 0 16px; }
+.title { font-size: 20px; font-weight: 800; color: var(--green); }
+.menu-btn { width: 36px; height: 36px; background: transparent; border: 1px solid var(--border); color: var(--text); border-radius: 8px; cursor: pointer; }
+.tab { display: flex; gap: 6px; margin-bottom: 16px; }
+.tab button { flex: 1; padding: 10px; background: var(--panel); border: 1px solid var(--border); color: var(--muted); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.tab button.active { background: linear-gradient(135deg, var(--green), #059669); border-color: var(--green); color: #fff; }
+
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+.stat { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px; text-align: center; }
+.stat-v { font-size: 20px; font-weight: 800; color: var(--green); }
+.stat-l { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+/* 종목 셀렉터 */
+.sport-sel { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.sport-sel button { padding: 14px 8px; background: var(--panel); border: 2px solid var(--border); border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 700; color: var(--muted); }
+.sport-sel button.active { background: rgba(16,185,129,0.15); border-color: var(--green); color: var(--green); }
+.sport-sel .em { font-size: 24px; display: block; margin-bottom: 4px; }
+
+/* 기록 화면 */
+.tracker { text-align: center; padding: 24px 16px; }
+.big-num { font-size: 56px; font-weight: 900; color: var(--green); margin: 12px 0; font-variant-numeric: tabular-nums; line-height: 1; }
+.big-l { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; }
+.row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0; }
+.row3 .stat-v { font-size: 18px; }
+.btn-big { width: 100%; padding: 16px; background: linear-gradient(135deg, var(--green), #059669); border: none; color: #fff; border-radius: 12px; cursor: pointer; font-size: 16px; font-weight: 800; margin-top: 8px; }
+.btn-big.stop { background: linear-gradient(135deg, var(--red), #dc2626); }
+.btn-big.gray { background: var(--panel); border: 1px solid var(--border); color: var(--muted); }
+
+/* 히스토리 카드 */
+.hist { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 8px; cursor: pointer; }
+.hist-row { display: flex; justify-content: space-between; align-items: center; }
+.hist-sport { font-size: 14px; font-weight: 700; }
+.hist-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.hist-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 8px; }
+.hist-grid div { font-size: 12px; color: var(--muted); }
+.hist-grid b { color: var(--text); }
+.path-svg { background: var(--bg); border-radius: 6px; margin-top: 8px; }
+
+/* 모달 */
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; padding: 16px; }
+.modal-content { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; max-width: 600px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 20px; }
+.input { width: 100%; padding: 10px; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 13px; margin-bottom: 8px; }
+
+/* 잔디 */
+.grass { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin: 8px 0; }
+.cell { aspect-ratio: 1; background: var(--bg); border-radius: 3px; }
+
+.toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--green); padding: 10px 18px; border-radius: 8px; font-size: 13px; z-index: 200; display: none; }
+.empty { padding: 40px 20px; text-align: center; color: var(--muted); font-size: 13px; }
+.km-btn { padding: 6px 12px; background: var(--bg); border: 1px solid var(--border); color: var(--muted); border-radius: 6px; cursor: pointer; font-size: 11px; margin: 0 2px; }
+.km-btn.active { background: var(--green); color: #fff; border-color: var(--green); }
+
+.sidebar { position: fixed; top: 0; left: -260px; bottom: 0; width: 240px; background: var(--panel); border-right: 1px solid var(--border); z-index: 300; transform: translateX(-100%); transition: transform 0.2s; display: flex; flex-direction: column; }
+.sidebar.open { transform: translateX(260px); }
+.sidebar-header { padding: 18px 16px; border-bottom: 1px solid var(--border); }
+.sidebar-title { font-size: 15px; font-weight: 700; color: var(--green); }
+.sidebar-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.sidebar-nav { flex: 1; padding: 12px 8px; overflow-y: auto; }
+.nav-item { padding: 10px 12px; margin-bottom: 2px; border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--text); }
+.nav-item:hover { background: rgba(16,185,129,0.08); }
+.nav-item.active { background: rgba(16,185,129,0.18); color: var(--green); font-weight: 600; }
+.sidebar-footer { padding: 12px; border-top: 1px solid var(--border); }
+.foot-btn { width: 100%; padding: 8px 12px; background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; cursor: pointer; font-size: 12px; margin-bottom: 6px; }
+.backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 250; }
+.backdrop.show { display: block; }
+.hamburger { position: relative; z-index: 400; width: 36px; height: 36px; background: transparent; border: 1px solid var(--border); color: var(--text); border-radius: 8px; cursor: pointer; }
+
+@media (max-width: 480px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head><body>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">🏃 AKL Move</div>
+    <div class="sidebar-sub">걷기/달리기/자전거</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-item active" data-nav="dash">📊 대시보드</div>
+    <div class="nav-item" data-nav="track">▶️ 새 기록</div>
+    <div class="nav-item" data-nav="hist">📋 히스토리</div>
+    <div class="nav-item" data-nav="sched">📅 스케줄</div>
+    <div class="nav-item" data-nav="goal">🎯 목표</div>
+    <div class="nav-item" data-nav="budget">💰 예산</div>
+    <div class="nav-item" data-nav="trophy">🏆 트로피</div>
+    <div class="nav-item" data-nav="friends">👥 친구와 함께</div>
+  </nav>
+  <div class="sidebar-footer">
+    <a href="https://pomodoro.akl.kr/" target="_blank" class="foot-btn" style="display:block;text-align:center;text-decoration:none">🍅 뽀모도로</a>
+    <button class="foot-btn" id="helpBtn">📖 설명서</button>
+    <button class="foot-btn" id="logoutBtn">🚪 로그아웃</button>
+  </div>
+</aside>
+<div class="backdrop" id="backdrop"></div>
+
+<div class="app">
+  <div class="header">
+    <button class="hamburger" id="menuToggle" onclick="toggleSidebar(event)">☰</button>
+    <div class="title">🏃 AKL Move</div>
+    <div style="width:36px"></div>
+  </div>
+
+  <div class="tab" style="display:none">
+    <button class="active" data-tab="dash">📊 대시보드</button>
+    <button data-tab="track">▶️ 기록</button>
+    <button data-tab="hist">📋 히스토리</button>
+    <button data-tab="sched">📅</button>
+    <button data-tab="goal">🎯</button>
+    <button data-tab="budget">💰</button>
+    <button data-tab="trophy">🏆</button>
+    <button data-tab="friends">👥</button>
+  </div>
+
+  <!-- 대시보드 -->
+  <section id="t-dash">
+    <div id="dashGreet" class="card" style="text-align:center"><div style="font-size:28px;margin-bottom:6px">🏃</div><div id="greetText" style="font-size:14px;color:var(--muted)">오늘도 한 발걸음</div></div>
+    <div id="dashWeather" class="card" style="display:none;background:linear-gradient(135deg,rgba(59,130,246,0.08),rgba(16,185,129,0.05));border:1px solid rgba(59,130,246,0.25)">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div id="wxIcon" style="font-size:32px">☀️</div>
+          <div id="wxTemp" style="font-size:24px;font-weight:800;color:var(--text);margin-top:2px">-</div>
+        </div>
+        <div style="text-align:right">
+          <div id="wxFit" style="font-size:13px;font-weight:700;color:var(--green)">운동 적합도</div>
+          <div id="wxMeta" style="font-size:11px;color:var(--muted);margin-top:2px;line-height:1.6">-</div>
+        </div>
+      </div>
+    </div>
+    <div onclick="document.querySelector('[data-nav=trophy]').click()" class="card" style="text-align:center;cursor:pointer;background:linear-gradient(135deg,rgba(251,191,36,0.08),rgba(16,185,129,0.05));border:1px solid rgba(251,191,36,0.25)">
+      <div style="font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">오늘의 별점 (🏆 자세히)</div>
+      <div id="dashStars" style="font-size:28px">☆☆☆☆☆</div>
+      <div id="dashStarText" style="font-size:11px;color:var(--gold);margin-top:4px">목표 미설정</div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-v" id="dWeek">0</div><div class="stat-l">이번주 (km)</div></div>
+      <div class="stat"><div class="stat-v" id="dMonth">0</div><div class="stat-l">이번달 (km)</div></div>
+      <div class="stat"><div class="stat-v" id="dCnt">0</div><div class="stat-l">총 활동</div></div>
+      <div class="stat"><div class="stat-v" id="dCal">0</div><div class="stat-l">총 칼로리</div></div>
+    </div>
+    <div class="card">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">📅 이번 달 활동</div>
+      <div class="grass" id="grass"></div>
+    </div>
+    <div class="card">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">🏆 종목별 합계 (km)</div>
+      <div id="bySport" style="font-size:14px;line-height:1.8"></div>
+    </div>
+  </section>
+
+  <!-- 트래커 -->
+  <section id="t-track" style="display:none">
+    <div class="sport-sel" id="sportSel">
+      <button class="active" data-sport="walk"><span class="em">🚶</span>걷기</button>
+      <button data-sport="run"><span class="em">🏃</span>달리기</button>
+      <button data-sport="bike"><span class="em">🚴</span>자전거</button>
+    </div>
+
+    <div class="card tracker">
+      <div class="big-l">거리 (km)</div>
+      <div class="big-num" id="trDist">0.00</div>
+
+      <div class="row3">
+        <div class="stat"><div class="stat-v" id="trTime">00:00</div><div class="stat-l">시간</div></div>
+        <div class="stat"><div class="stat-v" id="trSpd">0.0</div><div class="stat-l">속도 km/h</div></div>
+        <div class="stat"><div class="stat-v" id="trCal">0</div><div class="stat-l">칼로리</div></div>
+      </div>
+
+      <button class="btn-big" id="startBtn">▶️ 시작</button>
+      <button class="btn-big stop" id="stopBtn" style="display:none">⏹ 종료 + 저장</button>
+      <button class="btn-big gray" id="manualBtn" style="margin-top:8px">✍️ 수동 입력</button>
+    </div>
+    <div class="card" id="gpsHint" style="font-size:11px;color:var(--muted);text-align:center;display:none">
+      📡 GPS 권한이 필요합니다. 시작 버튼 클릭 시 브라우저 알림에서 허용하세요.
+    </div>
+  </section>
+
+  <!-- 히스토리 -->
+  <section id="t-hist" style="display:none">
+    <div style="margin-bottom:12px;text-align:right">
+      <button class="km-btn active" data-filter="all">전체</button>
+      <button class="km-btn" data-filter="walk">🚶</button>
+      <button class="km-btn" data-filter="run">🏃</button>
+      <button class="km-btn" data-filter="bike">🚴</button>
+    </div>
+    <div id="histList"></div>
+  </section>
+
+  <!-- 스케줄 -->
+  <section id="t-sched" style="display:none">
+    <div class="card">
+      <h3 style="font-size:14px;color:var(--green);margin-bottom:10px">📅 새 운동 예약</h3>
+      <div class="sport-sel" id="schSport">
+        <button class="active" data-sport="walk"><span class="em">🚶</span>걷기</button>
+        <button data-sport="run"><span class="em">🏃</span>달리기</button>
+        <button data-sport="bike"><span class="em">🚴</span>자전거</button>
+      </div>
+      <input class="input" id="schDate" type="datetime-local">
+      <input class="input" id="schLoc" placeholder="장소 (선택)">
+      <input class="input" id="schNotes" placeholder="메모">
+      <button class="btn-big" onclick="addSchedule()">＋ 예약 추가</button>
+    </div>
+    <div id="schList"></div>
+  </section>
+
+  <!-- 목표 -->
+  <section id="t-goal" style="display:none">
+    <div class="card">
+      <h3 style="font-size:14px;color:var(--green);margin-bottom:10px">🎯 새 목표</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <select class="input" id="gPeriod">
+          <option value="week">주간</option>
+          <option value="month" selected>월간</option>
+          <option value="year">연간</option>
+        </select>
+        <select class="input" id="gSport">
+          <option value="all">전체</option>
+          <option value="walk">🚶 걷기</option>
+          <option value="run">🏃 달리기</option>
+          <option value="bike">🚴 자전거</option>
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-bottom:8px">
+        <input class="input" id="gTarget" type="number" step="0.1" min="0" placeholder="목표값" style="margin:0">
+        <select class="input" id="gUnit" style="margin:0">
+          <option value="km">km</option>
+          <option value="회">회</option>
+          <option value="분">분</option>
+          <option value="kcal">kcal</option>
+        </select>
+      </div>
+      <button class="btn-big" onclick="addGoal()">＋ 목표 추가</button>
+    </div>
+    <div id="goalList"></div>
+  </section>
+
+  <!-- 예산 -->
+  <section id="t-budget" style="display:none">
+    <div class="card">
+      <h3 style="font-size:14px;color:var(--green);margin-bottom:10px">💰 새 지출</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <select class="input" id="bCat" style="margin:0">
+          <option value="헬스장">🏋️ 헬스장</option>
+          <option value="장비">⚙️ 장비</option>
+          <option value="의류">👕 의류</option>
+          <option value="신발">👟 신발</option>
+          <option value="레슨">🎓 레슨</option>
+          <option value="대회">🏆 대회</option>
+          <option value="기타">📌 기타</option>
+        </select>
+        <input class="input" id="bDate" type="date" style="margin:0">
+      </div>
+      <input class="input" id="bItem" placeholder="항목 (예: 러닝화 구매)">
+      <input class="input" id="bAmount" type="number" placeholder="금액 (원)">
+      <input class="input" id="bNotes" placeholder="메모 (선택)">
+      <button class="btn-big" onclick="addBudget()">＋ 지출 추가</button>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:12px;color:var(--muted)">📊 이번 달 합계</span>
+        <span id="bMonthTotal" style="font-size:18px;font-weight:800;color:var(--gold)">0원</span>
+      </div>
+      <div id="bByCat" style="font-size:12px;line-height:1.7;color:var(--muted)"></div>
+    </div>
+    <div id="budgetList"></div>
+  </section>
+</div>
+
+
+  <!-- 트로피 -->
+  <section id="t-trophy" style="display:none">
+    <div class="card" style="text-align:center;padding:24px;background:linear-gradient(135deg,rgba(251,191,36,0.1),rgba(16,185,129,0.05));border:1px solid rgba(251,191,36,0.3)">
+      <div style="font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase">오늘의 별점</div>
+      <div id="todayStars" style="font-size:42px;margin:8px 0">☆☆☆☆☆</div>
+      <div id="todayStarText" style="font-size:13px;color:var(--gold)">기록을 시작하세요</div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-v" id="trStreak" style="color:var(--gold)">0</div><div class="stat-l">🔥 연속 5★</div></div>
+      <div class="stat"><div class="stat-v" id="trBest5" style="color:var(--green)">0</div><div class="stat-l">🏆 5★ 일수</div></div>
+      <div class="stat"><div class="stat-v" id="trAvg" style="color:var(--accent)">0.0</div><div class="stat-l">📊 월평균</div></div>
+      <div class="stat"><div class="stat-v" id="trTotal" style="color:var(--blue)">0</div><div class="stat-l">⭐ 총 별</div></div>
+    </div>
+
+    <div class="card">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">📅 이번 달 일별 별점</div>
+      <div class="grass" id="trophyGrass" style="grid-template-columns:repeat(7,1fr);gap:4px"></div>
+    </div>
+
+    <div class="card">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">🎯 목표별 오늘 별점</div>
+      <div id="trophyByGoal" style="font-size:13px"></div>
+    </div>
+
+    <div class="card" style="font-size:11px;color:var(--muted);line-height:1.7">
+      <b style="color:var(--accent)">📖 별점 계산법</b><br>
+      목표 일평균 = 목표 ÷ 기간 일수 (예: 월 1000km ÷ 30일 ≈ 33km)<br>
+      오늘 누적 / 일평균 × 5 = 오늘 별점 (최대 5★)<br>
+      여러 목표가 있으면 모든 목표 별점 평균
+    </div>
+  </section>
+
+  <!-- 친구와 함께 -->
+  <section id="t-friends" style="display:none">
+    <div class="card">
+      <h3 style="font-size:14px;color:var(--green);margin-bottom:6px">👥 친구 추가</h3>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px">친구의 user_id를 입력. 같은 AKL 계정이면 누구나 가능. (내 ID: <code id="myUid" style="color:var(--accent)">-</code> <button onclick="navigator.clipboard.writeText(document.getElementById('myUid').textContent);toast('복사됨')" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:2px 8px;border-radius:4px;cursor:pointer;font-size:10px;margin-left:4px">복사</button>)</div>
+      <input class="input" id="frUid" placeholder="친구 user_id (예: u-xxxxxxx)">
+      <input class="input" id="frName" placeholder="별명 (예: 철수)">
+      <button class="btn-big" onclick="addFriend()">＋ 친구 추가</button>
+    </div>
+
+    <!-- 비교 잔디 -->
+    <div class="card">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">📅 이번 달 잔디 비교</div>
+      <div id="friendCompare"></div>
+    </div>
+
+    <!-- 친구 목록 -->
+    <div id="friendList"></div>
+  </section>
+<!-- 수동 입력 모달 -->
+<div class="modal" id="manualModal">
+  <div class="modal-content">
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px">
+      <h3 style="font-size:16px;color:var(--green)">✍️ 수동 입력</h3>
+      <button onclick="closeModal('manualModal')" style="background:transparent;border:1px solid var(--border);color:var(--muted);width:30px;height:30px;border-radius:6px">✕</button>
+    </div>
+    <div class="sport-sel" id="manualSport">
+      <button class="active" data-sport="walk"><span class="em">🚶</span>걷기</button>
+      <button data-sport="run"><span class="em">🏃</span>달리기</button>
+      <button data-sport="bike"><span class="em">🚴</span>자전거</button>
+    </div>
+    <input class="input" id="mDistance" type="number" step="0.01" placeholder="거리 (km)">
+    <input class="input" id="mDuration" type="number" placeholder="시간 (분)">
+    <input class="input" id="mNotes" placeholder="메모 (선택)">
+    <button class="btn-big" onclick="saveManual()">💾 저장</button>
+  </div>
+</div>
+
+
+<div class="modal" id="dayModal">
+  <div class="modal-content">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 id="dayTitle" style="font-size:16px;color:var(--green)">📅</h3>
+      <button onclick="document.getElementById('dayModal').style.display='none'" style="background:transparent;border:1px solid var(--border);color:var(--muted);width:30px;height:30px;border-radius:6px">✕</button>
+    </div>
+    <div id="dayBody" style="font-size:13px"></div>
+  </div>
+</div>
+<!-- 설명서 모달 -->
+<div class="modal" id="helpModal">
+  <div class="modal-content">
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px">
+      <h3 style="font-size:16px;color:var(--green)">📖 AKL Move 설명서</h3>
+      <button onclick="closeModal('helpModal')" style="background:transparent;border:1px solid var(--border);color:var(--muted);width:30px;height:30px;border-radius:6px">✕</button>
+    </div>
+    <div style="font-size:13px;line-height:1.7;color:var(--muted)">
+      <h4 style="color:var(--text);margin:10px 0 4px">🧭 메뉴</h4>
+      <ul style="padding-left:20px">
+        <li><b>📊 대시보드</b> — 주/월 합계, 잔디, 종목별 통계</li>
+        <li><b>▶️ 새 기록</b> — GPS 자동 트래킹</li>
+        <li><b>📋 히스토리</b> — 종목별 필터 + 경로 미니맵</li>
+        <li><b>📅 스케줄</b> — 운동 예약 (언제 어디서)</li>
+        <li><b>🎯 목표</b> — 주/월/연 목표 + 잔디 (셀 클릭 → 그날 기록)</li>
+        <li><b>💰 예산</b> — 카테고리별 지출 + 월합계</li>
+        <li><b>🍅 뽀모도로</b> — 운동 타이머 (외부 링크)</li>
+      </ul>
+
+      <h4 style="color:var(--text);margin:10px 0 4px">🎯 GPS 기록</h4>
+      <ul style="padding-left:20px">
+        <li>🚶 걷기 / 🏃 달리기 / 🚴 자전거 종목 선택</li>
+        <li><b>▶️ 시작</b> — GPS 권한 허용 → 자동 기록 (Wake Lock으로 화면 유지)</li>
+        <li><b>⏹ 종료</b> — 자동 저장</li>
+        <li><b>✍️ 수동 입력</b> — GPS 없이 사후 거리/시간 입력</li>
+      </ul>
+
+      <h4 style="color:var(--text);margin:10px 0 4px">📊 계산 기준</h4>
+      <ul style="padding-left:20px">
+        <li>거리: GPS Haversine 공식 누적 (1m~200m 사이만 반영, 흔들림 필터)</li>
+        <li>칼로리: MET × 70kg × 시간(h)</li>
+        <li>MET — 걷기 3.5 / 달리기 8.0 / 자전거 6.0</li>
+      </ul>
+
+      <h4 style="color:var(--text);margin:10px 0 4px">🎯 목표 + 잔디</h4>
+      <ul style="padding-left:20px">
+        <li>단위: km / 회 / 분 / kcal</li>
+        <li>기간: 주간 / 월간 / 연간 (자동 집계)</li>
+        <li>잔디 셀 — 일평균 목표 대비 진하기</li>
+        <li>셀 클릭 — 그날(또는 그달) 기록 모달</li>
+        <li><b>◀ ▶</b> — 이전/다음 기간 보기, "현재" 버튼으로 복귀</li>
+        <li>목표는 1~3개가 적당 (많으면 흐려짐)</li>
+      </ul>
+
+      <h4 style="color:var(--text);margin:10px 0 4px">🏆 트로피 + 별점</h4>
+      <ul style="padding-left:20px">
+        <li><b>오늘의 별점</b> — 모든 목표 평균 (0~5★)</li>
+        <li>계산: <code>오늘 누적 ÷ 일평균 목표 × 5</code></li>
+        <li>예: 월 1000km 목표 → 일평균 33km → 오늘 33km 달성 = 5★</li>
+        <li>📅 월별 일별 별점 잔디 (클릭 → 그날 상세)</li>
+        <li>📊 통계: 🔥 연속 5★ / 🏆 5★ 일수 / 월평균 / 총 별</li>
+      </ul>
+
+      <h4 style="color:var(--text);margin:10px 0 4px">📊 대시보드 잔디</h4>
+      <ul style="padding-left:20px">
+        <li>셀 = 날짜 + ⭐별점 + 거리 + 시간 한 눈에</li>
+        <li>오늘 셀은 그린 테두리 강조</li>
+        <li>셀 클릭 → 그날 모든 세션 + 목표별 별점 모달</li>
+      </ul>
+
+      <h4 style="color:var(--text);margin:10px 0 4px">📅 스케줄</h4>
+      <ul style="padding-left:20px">
+        <li>예: "내일 19시 한강 자전거"</li>
+        <li>날짜 지난 항목은 자동 흐림</li>
+      </ul>
+
+      <h4 style="color:var(--text);margin:10px 0 4px">💰 예산</h4>
+      <ul style="padding-left:20px">
+        <li>카테고리: 헬스장/장비/의류/신발/레슨/대회/기타</li>
+        <li>이번 달 합계 + 카테고리별 분석 자동</li>
+      </ul>
+
+      <h4 style="color:var(--text);margin:10px 0 4px">📱 모바일 PWA</h4>
+      <ul style="padding-left:20px">
+        <li>브라우저 메뉴 → "홈 화면에 추가" → 앱처럼 사용</li>
+        <li>화면 꺼짐 방지 (Wake Lock) 자동 작동</li>
+        <li>오프라인에서도 캐시된 화면 열림 (저장은 온라인 필요)</li>
+      </ul>
+
+      <h4 style="color:var(--text);margin:10px 0 4px">🔋 팁</h4>
+      <ul style="padding-left:20px">
+        <li>도시 빌딩 사이는 GPS 흔들림 가능</li>
+        <li>경로는 SVG로 압축 저장 (지도 없음, 가벼움)</li>
+        <li>로그인 한 번 → 30일 자동 유지</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const state = { sessions: [], schedules: [], goals: [], budgets: [], sport: 'walk', tracking: null, filter: 'all', viewOffsets: {}, currentWeather: '', weatherLog: [], friends: [], friendSessions: {} };
+const MET = { walk: 3.5, run: 8.0, bike: 6.0 };
+const ICONS = { walk: '🚶', run: '🏃', bike: '🚴' };
+const NAMES = { walk: '걷기', run: '달리기', bike: '자전거' };
+
+function toast(msg, ok = true) {
+  const t = $('toast'); t.textContent = msg;
+  t.style.borderColor = ok ? 'var(--green)' : 'var(--red)';
+  t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 2200);
+}
+function getToken() {
+  const m = document.cookie.match(/akl_token=([^;]+)/);
+  if (m) return m[1];
+  const t = localStorage.getItem('akl_token');
+  if (t) return t;
+  try { return JSON.parse(localStorage.getItem('akl_session') || '{}').token || null; }
+  catch (e) { return null; }
+}
+async function api(method, path, body) {
+  const r = await fetch('/api' + path, {
+    method, credentials: 'include',
+    headers: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (r.status === 401) { location.href = '/login'; return; }
+  return r.json();
+}
+
+// ──── 대시보드 ────
+function renderDash() {
+  const all = state.sessions;
+  const now = new Date();
+  const wkStart = new Date(now); wkStart.setDate(now.getDate() - now.getDay());
+  const moStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  let week = 0, month = 0, cal = 0;
+  const bySport = { walk: 0, run: 0, bike: 0 };
+  all.forEach(s => {
+    const d = new Date(s.startedAt);
+    const dist = (s.distance || 0) / 1000;
+    if (d >= wkStart) week += dist;
+    if (d >= moStart) month += dist;
+    cal += s.calories || 0;
+    bySport[s.sport] = (bySport[s.sport] || 0) + dist;
+  });
+  $('dWeek').textContent = week.toFixed(1);
+  $('dMonth').textContent = month.toFixed(1);
+  $('dCnt').textContent = all.length;
+  $('dCal').textContent = Math.round(cal);
+  const h = now.getHours();
+  $('greetText').textContent = h < 6 ? '🌙 새벽 운동 화이팅' : h < 12 ? '☀️ 좋은 아침, 움직여 볼까요' : h < 18 ? '🌤 오후의 활력' : '🌙 저녁 산책 추천';
+  $('bySport').innerHTML = Object.keys(bySport).map(k =>
+    `<div>${ICONS[k]} ${NAMES[k]}: <b style="color:var(--text)">${bySport[k].toFixed(2)} km</b></div>`).join('');
+
+  // 잔디 (이번 달) — 날짜 + 별점 + 거리/시간
+  const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const dayInfo = {}; // { d: { km, min, wx } }
+  all.forEach(s => {
+    const d = new Date(s.startedAt);
+    if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) {
+      const k = d.getDate();
+      if (!dayInfo[k]) dayInfo[k] = { km: 0, min: 0, wx: '' };
+      dayInfo[k].km += (s.distance || 0) / 1000;
+      dayInfo[k].min += (s.duration || 0) / 60;
+      if (s.weather && !dayInfo[k].wx) dayInfo[k].wx = s.weather;
+    }
+  });
+  // 운동 안 한 날도 weatherLog에서 가져오기
+  (state.weatherLog || []).forEach(w => {
+    const d = new Date(w.date + 'T00:00:00');
+    if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) {
+      const k = d.getDate();
+      if (!dayInfo[k]) dayInfo[k] = { km: 0, min: 0, wx: '' };
+      if (!dayInfo[k].wx) dayInfo[k].wx = w.weather;
+    }
+  });
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
+  const cells = [];
+  ['일','월','화','수','목','금','토'].forEach(h => cells.push(`<div style="font-size:9px;color:var(--muted);text-align:center;padding:2px">${h}</div>`));
+  for (let i = 0; i < firstDay; i++) cells.push('<div></div>');
+  for (let d = 1; d <= days; d++) {
+    const info = dayInfo[d] || { km: 0, min: 0 };
+    const km = info.km;
+    const key = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const stars = state.goals && state.goals.length ? dayStarsAvg(key) : 0;
+    const intensity = state.goals.length ? stars/5 : Math.min(1, km/5);
+    let c;
+    if (km === 0) {
+      c = info.wx === 'rain' ? 'rgba(59,130,246,0.15)' : info.wx === 'snow' ? 'rgba(156,163,175,0.2)' : 'var(--bg)';
+    } else {
+      c = `rgba(16,185,129,${0.25 + intensity*0.75})`;
+    }
+    const isToday = d === now.getDate() ? 'border:2px solid var(--green);' : 'border:1px solid var(--border);';
+    const wxIcon = info.wx === 'rain' ? '🌧' : info.wx === 'snow' ? '❄️' : info.wx === 'clear' ? '☀️' : '';
+    const starTxt = stars >= 0.5 ? `<div style="font-size:8px;color:var(--gold);line-height:1.1;font-weight:700">${stars.toFixed(1)}★</div>` : '';
+    const kmTxt = km > 0 ? `<div style="font-size:8px;color:var(--green);line-height:1.1">${km.toFixed(1)}km</div>` : '';
+    const minTxt = info.min > 0 ? `<div style="font-size:7px;color:var(--muted);line-height:1.1">${Math.round(info.min)}분</div>` : '';
+    const wxTxt = wxIcon ? `<div style="font-size:9px;line-height:1">${wxIcon}</div>` : '';
+    cells.push(`<div onclick="(window.showStarDetail||(()=>{}))('${key}')" class="cell" style="background:${c};${isToday}aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:2px" title="${d}일 ${km.toFixed(2)}km · ${Math.round(info.min)}분${stars?' · '+stars.toFixed(1)+'★':''}${info.wx?' · '+info.wx:''}"><div style="font-size:10px;font-weight:600;color:var(--text);line-height:1">${d}</div>${wxTxt}${starTxt}${kmTxt}${minTxt}</div>`);
+  }
+  $('grass').innerHTML = cells.join('');
+  // 오늘 별점 (대시보드)
+  const _dashStarsEl = document.getElementById('dashStars');
+  if (_dashStarsEl) {
+    if (state.goals && state.goals.length) {
+      const today = new Date().toISOString().slice(0,10);
+      const ts = dayStarsAvg(today);
+      _dashStarsEl.textContent = starString(ts);
+      const pct = (ts/5*100).toFixed(0);
+      const txt = ts >= 4.5 ? '🏆 완벽 (' + pct + '%)' :
+                  ts >= 3 ? '💪 좋아요 (' + pct + '%)' :
+                  ts >= 1 ? '🚶 ' + pct + '% 달성' : ts > 0 ? '🚶 ' + pct + '% (조금 더)' : (state.currentWeather === 'rain' ? '🌧 비 오는 날 — 쉬어가도 OK' : state.currentWeather === 'snow' ? '❄️ 눈 — 무리하지 말아요' : '🌱 오늘 아직 0km');
+      document.getElementById('dashStarText').textContent = txt;
+    } else {
+      document.getElementById('dashStarText').textContent = '목표를 먼저 설정하세요 →';
+    }
+  }
+}
+
+// ──── 히스토리 ────
+function renderHist() {
+  let list = state.sessions.slice().sort((a, b) => (b.startedAt || '').localeCompare(a.startedAt || ''));
+  if (state.filter !== 'all') list = list.filter(s => s.sport === state.filter);
+  if (!list.length) { $('histList').innerHTML = '<div class="empty">아직 기록이 없습니다</div>'; return; }
+  $('histList').innerHTML = list.map(s => {
+    const d = new Date(s.startedAt);
+    const dur = s.duration || 0;
+    const mm = Math.floor(dur / 60), ss = dur % 60;
+    const km = ((s.distance || 0) / 1000).toFixed(2);
+    const sp = ((s.distance || 0) / 1000 / Math.max(dur / 3600, 0.001)).toFixed(1);
+    const path = s.path && s.path.length > 1 ? renderPath(s.path) : '';
+    return `<div class="hist" onclick="confirmDel('${s.id}')">
+      <div class="hist-row">
+        <div><span class="hist-sport">${ICONS[s.sport]} ${NAMES[s.sport]}</span></div>
+        <div class="hist-meta">${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}</div>
+      </div>
+      <div class="hist-grid">
+        <div>거리 <b>${km}km</b></div>
+        <div>시간 <b>${mm}:${String(ss).padStart(2,'0')}</b></div>
+        <div>속도 <b>${sp}km/h</b></div>
+      </div>
+      ${path}
+      ${s.notes ? `<div style="font-size:12px;color:var(--muted);margin-top:6px">📝 ${s.notes.replace(/[<>]/g, '')}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderPath(path) {
+  if (!path || path.length < 2) return '';
+  const lats = path.map(p => p[0]), lngs = path.map(p => p[1]);
+  const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+  const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+  const W = 280, H = 80, pad = 6;
+  const sx = (lng) => pad + (lng - minLng) / Math.max(maxLng - minLng, 1e-9) * (W - 2 * pad);
+  const sy = (lat) => pad + (1 - (lat - minLat) / Math.max(maxLat - minLat, 1e-9)) * (H - 2 * pad);
+  const pts = path.map(p => `${sx(p[1]).toFixed(1)},${sy(p[0]).toFixed(1)}`).join(' ');
+  return `<svg class="path-svg" width="100%" height="80" viewBox="0 0 ${W} ${H}"><polyline points="${pts}" fill="none" stroke="var(--green)" stroke-width="2"/></svg>`;
+}
+
+async function confirmDel(id) {
+  if (!confirm('삭제하시겠습니까?')) return;
+  await api('DELETE', '/sessions/' + id);
+  state.sessions = state.sessions.filter(s => s.id !== id);
+  toast('🗑 삭제됨'); renderAll();
+}
+
+// ──── 트래커 (GPS) ────
+function R(deg) { return deg * Math.PI / 180; }
+function haversine(a, b) {
+  const r = 6371000, dlat = R(b[0] - a[0]), dlng = R(b[1] - a[1]);
+  const x = Math.sin(dlat/2)**2 + Math.cos(R(a[0])) * Math.cos(R(b[0])) * Math.sin(dlng/2)**2;
+  return r * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+
+let wakeLock = null;
+async function requestWakeLock() {
+  try { if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); } } catch (e) {}
+}
+function releaseWakeLock() { if (wakeLock) { wakeLock.release(); wakeLock = null; } }
+document.addEventListener('visibilitychange', () => { if (state.tracking && document.visibilityState === 'visible') requestWakeLock(); });
+
+function startTrack() {
+  requestWakeLock();
+  if (!navigator.geolocation) { toast('GPS 미지원', false); return; }
+  state.tracking = { startMs: Date.now(), distance: 0, path: [], watchId: null, timer: null, sport: state.sport };
+  $('startBtn').style.display = 'none';
+  $('stopBtn').style.display = 'block';
+  $('gpsHint').style.display = 'block';
+  state.tracking.watchId = navigator.geolocation.watchPosition(pos => {
+    const pt = [pos.coords.latitude, pos.coords.longitude, Date.now()];
+    const last = state.tracking.path[state.tracking.path.length - 1];
+    if (last) {
+      const d = haversine(last, pt);
+      if (d > 1 && d < 200) state.tracking.distance += d; // 1m~200m 사이 정상
+    }
+    state.tracking.path.push(pt);
+  }, err => toast('GPS 오류: ' + err.message, false), { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 });
+  state.tracking.timer = setInterval(updateTracker, 500);
+}
+function updateTracker() {
+  if (!state.tracking) return;
+  const t = state.tracking;
+  const dur = Math.floor((Date.now() - t.startMs) / 1000);
+  const km = (t.distance / 1000).toFixed(2);
+  const spd = dur > 0 ? (t.distance / 1000 / (dur / 3600)).toFixed(1) : '0.0';
+  const cal = Math.round((MET[t.sport] || 4) * 70 * (dur / 3600));
+  $('trDist').textContent = km;
+  $('trTime').textContent = `${String(Math.floor(dur/60)).padStart(2,'0')}:${String(dur%60).padStart(2,'0')}`;
+  $('trSpd').textContent = spd;
+  $('trCal').textContent = cal;
+}
+async function stopTrack() {
+  if (!state.tracking) return;
+  const t = state.tracking;
+  navigator.geolocation.clearWatch(t.watchId);
+  clearInterval(t.timer);
+  const dur = Math.floor((Date.now() - t.startMs) / 1000);
+  if (dur < 5) { toast('너무 짧음 (5초 미만)', false); resetTrack(); return; }
+  const cal = Math.round((MET[t.sport] || 4) * 70 * (dur / 3600));
+  const session = {
+    sport: t.sport, startedAt: new Date(t.startMs).toISOString(), endedAt: new Date().toISOString(),
+    duration: dur, distance: Math.round(t.distance),
+    avgSpeed: dur > 0 ? +(t.distance / dur * 3.6).toFixed(2) : 0,
+    calories: cal, path: t.path.map(p => [+p[0].toFixed(6), +p[1].toFixed(6), p[2] - t.startMs]),
+    notes: '',
+    weather: state.currentWeather || ''
+  };
+  const r = await api('POST', '/sessions', session);
+  if (r?.success) {
+    state.sessions.push(r.data);
+    toast(`✅ ${(t.distance/1000).toFixed(2)}km 기록됨`);
+    resetTrack(); renderAll();
+    document.querySelector('[data-tab="hist"]').click();
+  } else { toast('저장 실패', false); }
+}
+function resetTrack() {
+  releaseWakeLock();
+  state.tracking = null;
+  $('startBtn').style.display = 'block';
+  $('stopBtn').style.display = 'none';
+  $('gpsHint').style.display = 'none';
+  $('trDist').textContent = '0.00'; $('trTime').textContent = '00:00';
+  $('trSpd').textContent = '0.0'; $('trCal').textContent = '0';
+}
+
+// ──── 수동 입력 ────
+let manualSport = 'walk';
+async function saveManual() {
+  const dist = parseFloat($('mDistance').value);
+  const min = parseFloat($('mDuration').value);
+  if (!dist || !min) { toast('거리와 시간 필수', false); return; }
+  const dur = Math.round(min * 60);
+  const cal = Math.round((MET[manualSport] || 4) * 70 * (dur / 3600));
+  const session = {
+    sport: manualSport, startedAt: new Date().toISOString(), endedAt: new Date().toISOString(),
+    duration: dur, distance: Math.round(dist * 1000),
+    avgSpeed: +(dist / (min / 60)).toFixed(2), calories: cal, path: [],
+    notes: $('mNotes').value,
+    weather: state.currentWeather || ''
+  };
+  const r = await api('POST', '/sessions', session);
+  if (r?.success) {
+    state.sessions.push(r.data);
+    closeModal('manualModal');
+    $('mDistance').value = ''; $('mDuration').value = ''; $('mNotes').value = '';
+    toast('✅ 저장됨'); renderAll();
+  }
+}
+
+function closeModal(id) { $(id).style.display = 'none'; }
+function openModal(id) { $(id).style.display = 'flex'; }
+
+// ──── 탭 / 종목 ────
+document.querySelectorAll('.tab button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.tab button').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  ['dash', 'track', 'hist'].forEach(t => $('t-' + t).style.display = 'none');
+  $('t-' + b.dataset.tab).style.display = 'block';
+}));
+document.querySelectorAll('#sportSel button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#sportSel button').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); state.sport = b.dataset.sport;
+}));
+document.querySelectorAll('#manualSport button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#manualSport button').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); manualSport = b.dataset.sport;
+}));
+document.querySelectorAll('[data-filter]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-filter]').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); state.filter = b.dataset.filter; renderHist();
+}));
+
+$('startBtn').addEventListener('click', startTrack);
+$('stopBtn').addEventListener('click', stopTrack);
+$('manualBtn').addEventListener('click', () => openModal('manualModal'));
+$('helpBtn').addEventListener('click', () => { openModal('helpModal'); closeSidebar(); });
+
+// 사이드바 토글
+window.toggleSidebar = function(e) {
+  if (e) e.stopPropagation();
+  const sb = document.getElementById('sidebar');
+  const bd = document.getElementById('backdrop');
+  if (sb.classList.contains('open')) { sb.classList.remove('open'); bd.classList.remove('show'); }
+  else { sb.classList.add('open'); bd.classList.add('show'); }
+};
+
+const sb = document.getElementById('sidebar'), bd = document.getElementById('backdrop');
+function openSidebar() { sb.classList.add('open'); bd.classList.add('show'); }
+function closeSidebar() { sb.classList.remove('open'); bd.classList.remove('show'); }
+
+bd.addEventListener('click', closeSidebar);
+document.addEventListener('click', e => {
+  if (sb.classList.contains('open') && !sb.contains(e.target) && e.target.id !== 'menuToggle') closeSidebar();
+});
+// 사이드바 nav → 탭 동기화
+document.querySelectorAll('[data-nav]').forEach(n => n.addEventListener('click', () => {
+  document.querySelectorAll('[data-nav]').forEach(x => x.classList.remove('active'));
+  n.classList.add('active');
+  document.querySelector(`.tab button[data-tab="${n.dataset.nav}"]`).click();
+  if (n.dataset.nav === 'trophy') renderTrophy();
+  if (n.dataset.nav === 'friends') renderFriends();
+  closeSidebar();
+}));
+// 로그아웃
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await fetch('/api/auth/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + getToken() } }).catch(()=>{});
+  localStorage.removeItem('akl_session'); localStorage.removeItem('akl_token');
+  document.cookie = 'akl_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+  location.href = '/login';
+});
+
+document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.style.display = 'none'; }));
+
+function renderAll() { renderDash(); renderHist(); }
+
+
+
+
+
+
+// ──── 날씨 (공공데이터포털 프록시) ────
+function kmaBase() {
+  // 매시 40분 이후 정시 데이터 발표 → 안전 위해 1시간 전 정시
+  const d = new Date();
+  if (d.getMinutes() < 40) d.setHours(d.getHours() - 1);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  const hh = String(d.getHours()).padStart(2,'0');
+  return { date: `${yyyy}${mm}${dd}`, time: `${hh}00` };
+}
+async function loadWeather() {
+  // GPS 위치 → nx/ny (없으면 서울 60,127)
+  let nx = 60, ny = 127;
+  try {
+    const pos = await new Promise((res,rej) => {
+      navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000, maximumAge: 600000 });
+    });
+    const xy = lonLatToGrid(pos.coords.longitude, pos.coords.latitude);
+    nx = xy.x; ny = xy.y;
+  } catch (e) { /* 기본값 사용 */ }
+
+  const { date, time } = kmaBase();
+  try {
+    const r = await fetch(`/api/weather?nx=${nx}&ny=${ny}&base_date=${date}&base_time=${time}`);
+    const j = await r.json();
+    const items = j?.response?.body?.items?.item || [];
+    if (!items.length) return;
+    const v = {};
+    items.forEach(i => v[i.category] = i.obsrValue);
+    const t1h = parseFloat(v.T1H || 0);
+    const reh = parseFloat(v.REH || 0);
+    const pty = parseInt(v.PTY || 0);
+    const rn1 = parseFloat(v.RN1 || 0);
+    const wsd = parseFloat(v.WSD || 0);
+    const ptyText = ['','🌧 비','🌨 비/눈','❄️ 눈','🌦 소나기'][pty] || '';
+    state.currentWeather = pty === 0 ? 'clear' : (pty === 3 ? 'snow' : 'rain');
+    const today = new Date().toISOString().slice(0,10);
+    api('POST', '/weather-log', { date: today, weather: state.currentWeather }).then(() => {
+      api('GET', '/weather-log').then(r => { if (r?.success) { state.weatherLog = r.data; renderDash(); } });
+    });
+    const icon = pty > 0 ? (pty === 3 ? '❄️' : '🌧') : t1h >= 25 ? '☀️' : t1h >= 15 ? '🌤' : t1h >= 5 ? '⛅' : '🥶';
+    document.getElementById('wxIcon').textContent = icon;
+    document.getElementById('wxTemp').textContent = t1h.toFixed(1) + '°C';
+    document.getElementById('wxMeta').innerHTML = `습도 ${reh}% · 풍속 ${wsd}m/s${ptyText?' · '+ptyText:''}<br>${rn1>0?'강수 '+rn1+'mm':''}`;
+    // 운동 적합도
+    let score = 100, msg = '';
+    if (pty > 0) { score -= 50; msg = '비/눈 — 실내 권장'; }
+    else if (t1h < 0 || t1h > 33) { score -= 40; msg = t1h < 0 ? '추움 — 보온 필수' : '폭염 — 위험'; }
+    else if (t1h < 5 || t1h > 28) { score -= 20; msg = t1h < 5 ? '쌀쌀 — 따뜻하게' : '더움 — 수분 보충'; }
+    else if (wsd > 8) { score -= 15; msg = '강풍 주의'; }
+    else { msg = score >= 90 ? '👍 최적' : '👌 양호'; }
+    const fit = document.getElementById('wxFit');
+    fit.textContent = `운동 적합도 ${score}점`;
+    fit.style.color = score >= 80 ? 'var(--green)' : score >= 50 ? 'var(--gold)' : 'var(--red)';
+    document.getElementById('wxMeta').innerHTML += '<br>' + msg;
+    document.getElementById('dashWeather').style.display = 'block';
+  } catch (e) { console.log('weather err', e); }
+}
+
+// 위경도 → 동네예보 격자 (Lambert Conformal Conic 변환)
+function lonLatToGrid(lon, lat) {
+  const RE = 6371.00877, GRID = 5.0, SLAT1 = 30.0, SLAT2 = 60.0;
+  const OLON = 126.0, OLAT = 38.0, XO = 43, YO = 136;
+  const DEGRAD = Math.PI / 180.0;
+  const re = RE / GRID;
+  const slat1 = SLAT1 * DEGRAD, slat2 = SLAT2 * DEGRAD;
+  const olon = OLON * DEGRAD, olat = OLAT * DEGRAD;
+  let sn = Math.tan(Math.PI*0.25 + slat2*0.5) / Math.tan(Math.PI*0.25 + slat1*0.5);
+  sn = Math.log(Math.cos(slat1)/Math.cos(slat2)) / Math.log(sn);
+  let sf = Math.tan(Math.PI*0.25 + slat1*0.5);
+  sf = Math.pow(sf, sn) * Math.cos(slat1) / sn;
+  let ro = Math.tan(Math.PI*0.25 + olat*0.5);
+  ro = re * sf / Math.pow(ro, sn);
+  let ra = Math.tan(Math.PI*0.25 + lat*DEGRAD*0.5);
+  ra = re * sf / Math.pow(ra, sn);
+  let theta = lon*DEGRAD - olon;
+  if (theta > Math.PI) theta -= 2*Math.PI;
+  if (theta < -Math.PI) theta += 2*Math.PI;
+  theta *= sn;
+  return { x: Math.floor(ra*Math.sin(theta) + XO + 0.5), y: Math.floor(ro - ra*Math.cos(theta) + YO + 0.5) };
+}
+
+
+
+// ──── 친구 ────
+async function loadFriends() {
+  const r = await api('GET', '/friends');
+  state.friends = r?.data || [];
+  // 각 친구의 sessions 가져오기
+  state.friendSessions = {};
+  for (const f of state.friends) {
+    const r2 = await api('GET', '/friend-sessions?uid=' + encodeURIComponent(f.friendUid));
+    state.friendSessions[f.friendUid] = r2?.data || [];
+  }
+  renderFriends();
+}
+
+function buildMonthGrid(sessions, weatherLog) {
+  const now = new Date();
+  const yr = now.getFullYear(), mo = now.getMonth();
+  const days = new Date(yr, mo+1, 0).getDate();
+  const dayMap = {};
+  (sessions || []).forEach(s => {
+    const d = new Date(s.startedAt);
+    if (d.getFullYear() === yr && d.getMonth() === mo) {
+      const k = d.getDate();
+      if (!dayMap[k]) dayMap[k] = { km: 0, min: 0, wx: '' };
+      dayMap[k].km += (s.distance||0)/1000;
+      dayMap[k].min += (s.duration||0)/60;
+      if (s.weather && !dayMap[k].wx) dayMap[k].wx = s.weather;
+    }
+  });
+  (weatherLog || []).forEach(w => {
+    const d = new Date(w.date + 'T00:00:00');
+    if (d.getFullYear() === yr && d.getMonth() === mo) {
+      const k = d.getDate();
+      if (!dayMap[k]) dayMap[k] = { km: 0, min: 0, wx: '' };
+      if (!dayMap[k].wx) dayMap[k].wx = w.weather;
+    }
+  });
+  const firstDay = new Date(yr, mo, 1).getDay();
+  let html = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">';
+  ['일','월','화','수','목','금','토'].forEach(x => html += `<div style="font-size:8px;color:var(--muted);text-align:center">${x}</div>`);
+  for (let i = 0; i < firstDay; i++) html += '<div></div>';
+  for (let d = 1; d <= days; d++) {
+    const info = dayMap[d] || { km: 0, min: 0, wx: '' };
+    const intensity = Math.min(1, info.km/5);
+    let c;
+    if (info.km === 0) c = info.wx === 'rain' ? 'rgba(59,130,246,0.15)' : info.wx === 'snow' ? 'rgba(156,163,175,0.2)' : 'var(--bg)';
+    else c = `rgba(16,185,129,${0.25 + intensity*0.75})`;
+    const wx = info.wx === 'rain' ? '🌧' : info.wx === 'snow' ? '❄️' : info.wx === 'clear' ? '☀️' : '';
+    html += `<div style="aspect-ratio:1;background:${c};border-radius:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:8px;color:var(--text)" title="${d}일 ${info.km.toFixed(1)}km"><div style="font-size:9px">${d}</div>${info.km>0?`<div style="font-size:7px;color:var(--green)">${info.km.toFixed(1)}</div>`:wx?`<div style="font-size:8px">${wx}</div>`:''}</div>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderFriends() {
+  // 내 정보
+  const myUidEl = document.getElementById('myUid');
+  if (myUidEl && window._myUid) myUidEl.textContent = window._myUid;
+
+  // 비교
+  const cmp = document.getElementById('friendCompare');
+  if (!cmp) return;
+  let html = `<div style="margin-bottom:14px"><div style="font-size:12px;color:var(--green);font-weight:700;margin-bottom:6px">🏃 나</div>${buildMonthGrid(state.sessions, state.weatherLog)}</div>`;
+  (state.friends || []).forEach(f => {
+    const fs = state.friendSessions[f.friendUid] || [];
+    const monthKm = fs.filter(s => {
+      const d = new Date(s.startedAt); const n = new Date();
+      return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth();
+    }).reduce((a,s) => a + (s.distance||0)/1000, 0);
+    html += `<div style="margin-bottom:14px"><div style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:6px">👤 ${f.friendName.replace(/[<>]/g,'')} <span style="color:var(--muted);font-size:10px;font-weight:normal">${monthKm.toFixed(1)}km</span></div>${buildMonthGrid(fs, [])}</div>`;
+  });
+  cmp.innerHTML = html;
+
+  // 목록
+  const list = document.getElementById('friendList');
+  if (!list) return;
+  if (!state.friends.length) { list.innerHTML = '<div class="empty">아직 친구가 없습니다</div>'; return; }
+  list.innerHTML = state.friends.map(f => {
+    const fs = state.friendSessions[f.friendUid] || [];
+    const totalKm = fs.reduce((a,s) => a + (s.distance||0)/1000, 0);
+    return `<div class="card" style="border-left:3px solid var(--accent)">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:14px;font-weight:700">👤 ${f.friendName.replace(/[<>]/g,'')}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">총 ${totalKm.toFixed(1)}km · ${fs.length}회</div>
+        </div>
+        <button onclick="delFriend('${f.id}')" style="background:transparent;border:1px solid var(--border);color:var(--red);padding:6px 10px;border-radius:6px;cursor:pointer;font-size:11px">삭제</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function addFriend() {
+  const friendUid = document.getElementById('frUid').value.trim();
+  const friendName = document.getElementById('frName').value.trim() || friendUid;
+  if (!friendUid) { toast('user_id 필수', false); return; }
+  const r = await api('POST', '/friends', { friendUid, friendName });
+  if (r?.success) {
+    document.getElementById('frUid').value = '';
+    document.getElementById('frName').value = '';
+    toast('✅ 친구 추가'); loadFriends();
+  }
+}
+async function delFriend(id) {
+  if (!confirm('친구 삭제?')) return;
+  await api('DELETE', '/friends/' + id);
+  state.friends = state.friends.filter(x => x.id !== id);
+  renderFriends();
+}
+
+// ──── 트로피 ────
+function calcStarsForGoal(g, dateKey) {
+  // 해당 날짜의 누적값과 일평균 목표 비율로 별 (0~5)
+  const d = new Date(dateKey + 'T00:00:00');
+  let dailyTarget;
+  if (g.period === 'week') dailyTarget = g.target / 7;
+  else if (g.period === 'year') dailyTarget = g.target / 365;
+  else {
+    const days = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+    dailyTarget = g.target / days;
+  }
+  let v = 0;
+  state.sessions.forEach(ses => {
+    if (g.sport !== 'all' && ses.sport !== g.sport) return;
+    if ((ses.startedAt || '').slice(0,10) !== dateKey) return;
+    if (g.unit === 'km') v += (ses.distance||0)/1000;
+    else if (g.unit === '회') v += 1;
+    else if (g.unit === '분') v += (ses.duration||0)/60;
+    else if (g.unit === 'kcal') v += ses.calories||0;
+  });
+  if (dailyTarget <= 0) return 0;
+  return Math.min(5, (v / dailyTarget) * 5);
+}
+
+function dayStarsAvg(dateKey) {
+  const goals = state.goals || [];
+  if (!goals.length) return 0;
+  let sum = 0;
+  goals.forEach(g => sum += calcStarsForGoal(g, dateKey));
+  return sum / goals.length;
+}
+
+function starString(n) {
+  const full = Math.floor(n);
+  const half = n - full >= 0.5 ? 1 : 0;
+  const empty = 5 - full - half;
+  return '★'.repeat(full) + (half ? '⯨' : '') + '☆'.repeat(empty);
+}
+
+function renderTrophy() {
+  const today = new Date().toISOString().slice(0,10);
+  const todayStars = dayStarsAvg(today);
+  $('todayStars').textContent = starString(todayStars);
+  const pct = (todayStars/5*100).toFixed(0);
+  $('todayStarText').textContent = todayStars >= 4.5 ? `🏆 완벽! (${pct}%)` :
+    todayStars >= 3 ? `💪 좋아요 (${pct}%)` :
+    todayStars >= 1 ? `🚶 ${pct}% 달성` :
+    state.goals.length === 0 ? '목표를 먼저 설정하세요' : todayStars > 0 ? `🚶 ${pct}% (조금 더)` : (state.currentWeather === 'rain' ? '🌧 비 오는 날 — 휴식도 운동' : state.currentWeather === 'snow' ? '❄️ 눈 — 무리하지 마세요' : '🌱 오늘 아직 0km');
+
+  // 이번 달 잔디 (별 점 강도)
+  const now = new Date();
+  const yr = now.getFullYear(), mo = now.getMonth();
+  const days = new Date(yr, mo+1, 0).getDate();
+  const firstDay = new Date(yr, mo, 1).getDay();
+  const dailyStars = [];
+  for (let d = 1; d <= days; d++) {
+    const key = `${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    dailyStars.push({ d, key, stars: dayStarsAvg(key) });
+  }
+  let html = '';
+  ['일','월','화','수','목','금','토'].forEach(h => html += `<div style="font-size:9px;color:var(--muted);text-align:center">${h}</div>`);
+  for (let i = 0; i < firstDay; i++) html += '<div></div>';
+  dailyStars.forEach(({d, key, stars}) => {
+    const intensity = stars / 5;
+    const c = stars === 0 ? 'var(--bg)' : `rgba(251,191,36,${0.2 + intensity*0.8})`;
+    html += `<div onclick="showStarDetail('${key}')" style="aspect-ratio:1;background:${c};border-radius:4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:9px;color:var(--text)" title="${d}일 ${stars.toFixed(1)}★"><div>${d}</div>${stars >= 0.5 ? `<div style="font-size:8px;color:var(--gold)">${stars.toFixed(1)}</div>` : ''}</div>`;
+  });
+  $('trophyGrass').innerHTML = html;
+
+  // 통계
+  let streak = 0;
+  for (let i = days; i >= 1; i--) {
+    const key = `${yr}-${String(mo+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+    const k = new Date(key);
+    if (k > now) continue;
+    if (dayStarsAvg(key) >= 4.5) streak++;
+    else break;
+  }
+  const best5 = dailyStars.filter(x => x.stars >= 4.5).length;
+  const validDays = dailyStars.filter(x => new Date(x.key) <= now);
+  const avg = validDays.length ? validDays.reduce((a,x) => a+x.stars, 0) / validDays.length : 0;
+  const totalStars = dailyStars.reduce((a,x) => a + Math.floor(x.stars), 0);
+  $('trStreak').textContent = streak;
+  $('trBest5').textContent = best5;
+  $('trAvg').textContent = avg.toFixed(1);
+  $('trTotal').textContent = totalStars;
+
+  // 목표별
+  const byGoal = state.goals.map(g => {
+    const stars = calcStarsForGoal(g, today);
+    const sName = g.sport==='all'?'전체':(NAMES[g.sport]||g.sport);
+    const pName = g.period==='week'?'주간':g.period==='year'?'연간':'월간';
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div><div style="font-size:13px;font-weight:600">${pName} ${sName}</div><div style="font-size:11px;color:var(--muted)">${g.target}${g.unit} 목표</div></div>
+      <div style="text-align:right"><div style="color:var(--gold);font-size:14px">${starString(stars)}</div><div style="font-size:10px;color:var(--muted)">${stars.toFixed(1)} / 5.0</div></div>
+    </div>`;
+  }).join('');
+  $('trophyByGoal').innerHTML = byGoal || '<div class="empty">목표를 먼저 설정하세요</div>';
+}
+
+window.showStarDetail = function(dateKey) {
+  const m = document.getElementById('dayModal');
+  const t = document.getElementById('dayTitle');
+  const b = document.getElementById('dayBody');
+  const stars = dayStarsAvg(dateKey);
+  t.textContent = `🏆 ${dateKey} — ${starString(stars)} (${stars.toFixed(1)}/5)`;
+  // 목표별 + 세션
+  let html = '<div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:10px"><b style="color:var(--gold);font-size:12px">목표별 별점</b><br>';
+  state.goals.forEach(g => {
+    const s = calcStarsForGoal(g, dateKey);
+    const sName = g.sport==='all'?'전체':(NAMES[g.sport]||g.sport);
+    html += `<div style="font-size:12px;margin-top:4px">${sName}: ${starString(s)} <span style="color:var(--muted)">(${s.toFixed(1)})</span></div>`;
+  });
+  html += '</div>';
+  const sessions = state.sessions.filter(s => (s.startedAt||'').slice(0,10) === dateKey);
+  if (sessions.length) {
+    html += '<div style="font-size:12px;color:var(--muted);margin-bottom:6px">기록</div>';
+    html += sessions.map(s => {
+      const km = ((s.distance||0)/1000).toFixed(2);
+      return `<div style="background:var(--bg);border-radius:6px;padding:8px;margin-bottom:4px;font-size:12px">${ICONS[s.sport]||'🏃'} ${km}km · ${Math.floor((s.duration||0)/60)}분 · ${s.calories||0}kcal</div>`;
+    }).join('');
+  } else {
+    html += '<div class="empty">기록 없음</div>';
+  }
+  b.innerHTML = html;
+  m.style.display = 'flex';
+};
+
+// ──── 스케줄 / 목표 / 예산 ────
+let schSport = 'walk';
+async function loadSched() {
+  const r = await api('GET', '/schedules');
+  state.schedules = r?.data || [];
+  renderSched();
+}
+function renderSched() {
+  const list = (state.schedules || []).slice().sort((a,b) => (a.plannedAt||'').localeCompare(b.plannedAt||''));
+  const now = new Date();
+  if (!list.length) { $('schList').innerHTML = '<div class="empty">예약된 운동이 없습니다</div>'; return; }
+  $('schList').innerHTML = list.map(s => {
+    const d = new Date(s.plannedAt);
+    const past = d < now;
+    return `<div class="card" style="opacity:${past?0.5:1};border-left:3px solid var(--green)">
+      <div style="display:flex;justify-content:space-between">
+        <div>
+          <div style="font-size:14px;font-weight:700">${ICONS[s.sport]||'🏃'} ${NAMES[s.sport]||s.sport}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">📅 ${d.toLocaleString('ko-KR',{month:'short',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit'})}</div>
+          ${s.location?`<div style="font-size:12px;color:var(--muted);margin-top:2px">📍 ${s.location.replace(/[<>]/g,'')}</div>`:''}
+          ${s.notes?`<div style="font-size:11px;color:var(--muted);margin-top:4px">📝 ${s.notes.replace(/[<>]/g,'')}</div>`:''}
+        </div>
+        <button onclick="delSched('${s.id}')" style="background:transparent;border:1px solid var(--border);color:var(--red);padding:6px 10px;border-radius:6px;cursor:pointer;font-size:11px">삭제</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function addSchedule() {
+  const dt = $('schDate').value;
+  if (!dt) { toast('날짜 필수', false); return; }
+  const r = await api('POST', '/schedules', {
+    sport: schSport,
+    plannedAt: new Date(dt).toISOString(),
+    location: $('schLoc').value,
+    notes: $('schNotes').value
+  });
+  if (r?.success) {
+    state.schedules.push(r.data);
+    $('schDate').value=''; $('schLoc').value=''; $('schNotes').value='';
+    toast('✅ 예약 추가'); renderSched();
+  }
+}
+async function delSched(id) {
+  if (!confirm('삭제?')) return;
+  await api('DELETE', '/schedules/'+id);
+  state.schedules = state.schedules.filter(x => x.id !== id);
+  renderSched();
+}
+document.querySelectorAll('#schSport button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#schSport button').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); schSport = b.dataset.sport;
+}));
+
+async function loadGoals() {
+  const r = await api('GET', '/goals');
+  state.goals = r?.data || [];
+  renderGoals();
+}
+function renderGoals() {
+  const list = state.goals || [];
+  if (!list.length) { $('goalList').innerHTML = '<div class="empty">설정한 목표가 없습니다 (1~3개 정도가 적당)</div>'; return; }
+  const now = new Date();
+
+  $('goalList').innerHTML = list.map(g => {
+    const off = state.viewOffsets[g.id] || 0;
+    let start, end, label;
+    if (g.period === 'week') {
+      start = new Date(now); start.setDate(now.getDate()-now.getDay()+off*7); start.setHours(0,0,0,0);
+      end = new Date(start); end.setDate(start.getDate()+7);
+      label = `${start.getMonth()+1}/${start.getDate()} ~ ${(end.getMonth()+1)}/${end.getDate()-1}`;
+    } else if (g.period === 'year') {
+      start = new Date(now.getFullYear()+off, 0, 1);
+      end = new Date(now.getFullYear()+off+1, 0, 1);
+      label = `${now.getFullYear()+off}년`;
+    } else {
+      start = new Date(now.getFullYear(), now.getMonth()+off, 1);
+      end = new Date(now.getFullYear(), now.getMonth()+off+1, 1);
+      label = `${start.getFullYear()}년 ${start.getMonth()+1}월`;
+    }
+    // 일자별 합계
+    const dayMap = {};
+    let cur = 0;
+    state.sessions.forEach(ses => {
+      if (g.sport !== 'all' && ses.sport !== g.sport) return;
+      const d = new Date(ses.startedAt);
+      if (d < start || d >= end) return;
+      let v = 0;
+      if (g.unit === 'km') v = (ses.distance||0)/1000;
+      else if (g.unit === '회') v = 1;
+      else if (g.unit === '분') v = (ses.duration||0)/60;
+      else if (g.unit === 'kcal') v = ses.calories||0;
+      cur += v;
+      const key = d.toISOString().slice(0,10);
+      dayMap[key] = (dayMap[key]||0) + v;
+    });
+    const pct = Math.min(100, (cur/g.target*100));
+    const sName = g.sport==='all'?'전체': (NAMES[g.sport]||g.sport);
+    const pName = g.period==='week'?'주간':g.period==='year'?'연간':'월간';
+
+    // 잔디 렌더링
+    let grassCells = '';
+    if (g.period === 'week') {
+      const days = ['일','월','화','수','목','금','토'];
+      grassCells = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:10px">';
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(start); d.setDate(start.getDate()+i);
+        const key = d.toISOString().slice(0,10);
+        const v = dayMap[key] || 0;
+        const dailyTarget = g.target / 7;
+        const intensity = Math.min(1, v/dailyTarget);
+        const c = v === 0 ? 'var(--bg)' : `rgba(16,185,129,${0.25 + intensity*0.75})`;
+        grassCells += `<div onclick="showDayDetail('${key}')" style="aspect-ratio:1;background:${c};border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted)" title="${days[i]} ${v.toFixed(1)}${g.unit}">${days[i]}</div>`;
+      }
+      grassCells += '</div>';
+    } else if (g.period === 'month') {
+      const yr = start.getFullYear(), mo = start.getMonth();
+      const days = new Date(yr, mo+1, 0).getDate();
+      const dailyTarget = g.target / days;
+      const firstDay = new Date(yr, mo, 1).getDay();
+      grassCells = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:10px">';
+      ['일','월','화','수','목','금','토'].forEach(h => grassCells += `<div style="font-size:9px;color:var(--muted);text-align:center">${h}</div>`);
+      for (let i = 0; i < firstDay; i++) grassCells += '<div></div>';
+      for (let d = 1; d <= days; d++) {
+        const key = `${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const v = dayMap[key] || 0;
+        const intensity = Math.min(1, v/dailyTarget);
+        const c = v === 0 ? 'var(--bg)' : `rgba(16,185,129,${0.25 + intensity*0.75})`;
+        grassCells += `<div onclick="showDayDetail('${key}')" style="aspect-ratio:1;background:${c};border-radius:3px;cursor:pointer;font-size:9px;color:var(--muted);display:flex;align-items:center;justify-content:center" title="${d}일 ${v.toFixed(1)}${g.unit}">${d}</div>`;
+      }
+      grassCells += '</div>';
+    } else if (g.period === 'year') {
+      const yr = start.getFullYear();
+      const monthlyTarget = g.target / 12;
+      const monthMap = {};
+      Object.entries(dayMap).forEach(([k,v]) => {
+        const m = parseInt(k.slice(5,7))-1;
+        monthMap[m] = (monthMap[m]||0) + v;
+      });
+      grassCells = '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-top:10px">';
+      ['1','2','3','4','5','6','7','8','9','10','11','12'].forEach((m, i) => {
+        const v = monthMap[i] || 0;
+        const intensity = Math.min(1, v/monthlyTarget);
+        const c = v === 0 ? 'var(--bg)' : `rgba(16,185,129,${0.25 + intensity*0.75})`;
+        grassCells += `<div onclick="showMonthDetail(${i}, ${yr})" style="aspect-ratio:1.5;background:${c};border-radius:4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:var(--text)" title="${i+1}월 ${v.toFixed(1)}${g.unit}"><div style="font-weight:700">${i+1}월</div><div style="font-size:9px;color:var(--muted)">${v.toFixed(0)}${g.unit}</div></div>`;
+      });
+      grassCells += '</div>';
+    }
+
+    return `<div class="card" style="border-left:3px solid var(--gold)">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <div>
+          <div style="font-size:14px;font-weight:700">🎯 ${pName} ${sName}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">목표 ${g.target}${g.unit}</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px"><button onclick="navGoal('${g.id}',-1)" style="background:transparent;border:1px solid var(--border);color:var(--text);width:24px;height:24px;border-radius:4px;cursor:pointer;font-size:11px">◀</button><span style="font-size:11px;color:var(--accent)">${label}</span><button onclick="navGoal('${g.id}',1)" style="background:transparent;border:1px solid var(--border);color:var(--text);width:24px;height:24px;border-radius:4px;cursor:pointer;font-size:11px">▶</button>${off!==0?`<button onclick="navGoal('${g.id}',null)" style="background:transparent;border:1px solid var(--green);color:var(--green);padding:2px 8px;border-radius:4px;cursor:pointer;font-size:10px">현재</button>`:""}</div>
+        </div>
+        <button onclick="delGoal('${g.id}')" style="background:transparent;border:1px solid var(--border);color:var(--red);padding:6px 10px;border-radius:6px;cursor:pointer;font-size:11px">삭제</button>
+      </div>
+      <div style="font-size:13px;margin-bottom:6px"><b style="color:var(--green)">${cur.toFixed(1)}</b> / ${g.target} ${g.unit} <span style="color:var(--muted);font-size:11px">(${pct.toFixed(0)}%)</span></div>
+      <div style="background:var(--bg);height:8px;border-radius:4px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--green),var(--gold))"></div>
+      </div>
+      ${grassCells}
+    </div>`;
+  }).join('');
+}
+
+
+window.navGoal = function(gid, delta) {
+  if (delta === null) state.viewOffsets[gid] = 0;
+  else state.viewOffsets[gid] = (state.viewOffsets[gid] || 0) + delta;
+  renderGoals();
+};
+
+window.showDayDetail = function(dateKey) {
+  const sessions = state.sessions.filter(s => (s.startedAt||'').slice(0,10) === dateKey);
+  const m = document.getElementById('dayModal');
+  const t = document.getElementById('dayTitle');
+  const b = document.getElementById('dayBody');
+  t.textContent = '📅 ' + dateKey;
+  if (!sessions.length) {
+    b.innerHTML = '<div class="empty">이 날짜에 기록이 없습니다</div>';
+  } else {
+    b.innerHTML = sessions.map(s => {
+      const dur = s.duration||0; const km = ((s.distance||0)/1000).toFixed(2);
+      return `<div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:8px">
+        <div style="font-weight:700">${ICONS[s.sport]||'🏃'} ${NAMES[s.sport]||s.sport}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">거리 ${km}km · 시간 ${Math.floor(dur/60)}분 · ${s.calories||0}kcal</div>
+        ${s.notes ? `<div style="font-size:11px;color:var(--muted);margin-top:4px">📝 ${s.notes.replace(/[<>]/g,'')}</div>` : ''}
+      </div>`;
+    }).join('');
+  }
+  m.style.display = 'flex';
+};
+window.showMonthDetail = function(monthIdx, yr) {
+  yr = yr || new Date().getFullYear();
+  const sessions = state.sessions.filter(s => {
+    const d = new Date(s.startedAt);
+    return d.getFullYear() === yr && d.getMonth() === monthIdx;
+  });
+  const m = document.getElementById('dayModal');
+  const t = document.getElementById('dayTitle');
+  const b = document.getElementById('dayBody');
+  t.textContent = `📅 ${yr}년 ${monthIdx+1}월 (${sessions.length}회)`;
+  if (!sessions.length) {
+    b.innerHTML = '<div class="empty">이 달에 기록이 없습니다</div>';
+  } else {
+    b.innerHTML = sessions.sort((a,b)=>(b.startedAt||'').localeCompare(a.startedAt||'')).map(s => {
+      const d = new Date(s.startedAt);
+      const km = ((s.distance||0)/1000).toFixed(2);
+      return `<div style="background:var(--bg);border-radius:8px;padding:10px;margin-bottom:6px">
+        <div style="font-size:13px"><b>${ICONS[s.sport]||'🏃'} ${d.getMonth()+1}/${d.getDate()}</b> · ${km}km · ${s.calories||0}kcal</div>
+      </div>`;
+    }).join('');
+  }
+  m.style.display = 'flex';
+};
+async function addGoal() {
+  const target = parseFloat($('gTarget').value);
+  if (!target) { toast('목표값 필수', false); return; }
+  const r = await api('POST', '/goals', {
+    period: $('gPeriod').value, sport: $('gSport').value,
+    target, unit: $('gUnit').value
+  });
+  if (r?.success) {
+    state.goals.push(r.data); $('gTarget').value='';
+    toast('✅ 목표 추가'); renderGoals();
+  }
+}
+async function delGoal(id) {
+  if (!confirm('삭제?')) return;
+  await api('DELETE', '/goals/'+id);
+  state.goals = state.goals.filter(x => x.id !== id);
+  renderGoals();
+}
+
+async function loadBudgets() {
+  const r = await api('GET', '/budgets');
+  state.budgets = r?.data || [];
+  renderBudgets();
+}
+function renderBudgets() {
+  const list = (state.budgets || []).slice().sort((a,b) => (b.spentAt||'').localeCompare(a.spentAt||''));
+  const now = new Date();
+  let monthTotal = 0;
+  const byCat = {};
+  list.forEach(b => {
+    const d = new Date(b.spentAt);
+    if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) {
+      monthTotal += b.amount || 0;
+      byCat[b.category] = (byCat[b.category]||0) + (b.amount||0);
+    }
+  });
+  $('bMonthTotal').textContent = monthTotal.toLocaleString() + '원';
+  $('bByCat').innerHTML = Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([c,v]) =>
+    `<div>${c}: <b style="color:var(--text)">${v.toLocaleString()}원</b></div>`).join('') || '<div>지출 없음</div>';
+
+  if (!list.length) { $('budgetList').innerHTML = '<div class="empty">지출 기록이 없습니다</div>'; return; }
+  $('budgetList').innerHTML = list.map(b => `
+    <div class="card" style="border-left:3px solid var(--gold)">
+      <div style="display:flex;justify-content:space-between">
+        <div>
+          <div style="font-size:13px;font-weight:700">${b.category} — ${(b.item||'').replace(/[<>]/g,'')||'-'}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${(b.spentAt||'').slice(0,10)}${b.notes?` · ${b.notes.replace(/[<>]/g,'')}`:''}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:14px;font-weight:800;color:var(--gold)">${(b.amount||0).toLocaleString()}원</div>
+          <button onclick="delBudget('${b.id}')" style="background:transparent;border:1px solid var(--border);color:var(--red);padding:4px 8px;border-radius:4px;cursor:pointer;font-size:10px;margin-top:4px">삭제</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+async function addBudget() {
+  const amount = parseFloat($('bAmount').value);
+  if (!amount) { toast('금액 필수', false); return; }
+  const r = await api('POST', '/budgets', {
+    category: $('bCat').value,
+    item: $('bItem').value,
+    amount,
+    spentAt: $('bDate').value || new Date().toISOString().slice(0,10),
+    notes: $('bNotes').value
+  });
+  if (r?.success) {
+    state.budgets.push(r.data);
+    $('bItem').value=''; $('bAmount').value=''; $('bNotes').value='';
+    toast('✅ 지출 추가'); renderBudgets();
+  }
+}
+async function delBudget(id) {
+  if (!confirm('삭제?')) return;
+  await api('DELETE', '/budgets/'+id);
+  state.budgets = state.budgets.filter(x => x.id !== id);
+  renderBudgets();
+}
+
+(async () => {
+  if (!getToken()) { location.href = '/login'; return; }
+  const r = await api('GET', '/sessions');
+  state.sessions = (r && r.success) ? r.data : [];
+  await Promise.all([loadSched(), loadGoals(), loadBudgets()]);
+  const _wlog = await api('GET', '/weather-log');
+  state.weatherLog = _wlog?.data || [];
+  const _me = await fetch('/api/auth/me', { headers: { Authorization: 'Bearer ' + getToken() } }).then(r => r.json()).catch(()=>null);
+  if (_me?.success) window._myUid = _me.data?.id || _me.data?.userId || _me.data?.user?.id || '';
+  await loadFriends();
+  loadWeather();
+  renderAll();
+})();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
+</script>
+</body></html>

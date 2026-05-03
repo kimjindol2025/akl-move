@@ -1,0 +1,331 @@
+; ═══════════════════════════════════════════════════════════════
+; AKL MOVE — 걷기/달리기/자전거 통합 GPS 트래커
+; FreeLang v11 | Port: 39060 | DB: MariaDB akl.move_sessions
+; ═══════════════════════════════════════════════════════════════
+
+(define PORT 39060)
+(define USERINFO_URL "http://localhost:39000/api/auth/userinfo")
+
+(load "/home/kimjin/services/akl-lib/mariadb.fl")
+(load "/home/kimjin/services/akl-lib/auth.fl")
+(load "/home/kimjin/services/akl-lib/response.fl")
+
+(defn active-only [$items] (filter (fn [$it] (nil? (get $it "deletedAt"))) $items))
+(defn mine-only [$items $uid] (filter (fn [$it] (= (get $it "userId") $uid)) $items))
+
+(defn handle-auth-me [$req]
+  (let [[$auth   (server_req_header $req "authorization")]
+        [$cookie (server_req_cookie $req "akl_token")]
+        [$bearer (if (and $auth (> (length $auth) 7))
+                   (substring $auth 7 (length $auth)) nil)]
+        [$token  (or $bearer $cookie)]]
+    (if (nil? $token) (res-401)
+      (let [[$res  (http_get_bearer USERINFO_URL $token)]
+            [$body (json_parse (get $res "body"))]]
+        (server_json $body)))))
+
+(defn handle-login-page [$req]
+  (assoc (server_html (file_read "public/login.html")) "headers" {"Cache-Control" "no-store"}))
+
+(defn handle-auth-login [$req]
+  (let [[$body  (server_req_body $req)]
+        [$res   (http_post "http://localhost:39000/api/auth/login" $body)]
+        [$status (or (get $res "status") 200)]
+        [$out   (json_parse (get $res "body"))]]
+    (server_status $status $out)))
+
+(defn handle-auth-logout [$req]
+  (let [[$auth (server_req_header $req "authorization")]]
+    (if (and $auth (> (length $auth) 7))
+      (http_request "POST" "http://localhost:39000/api/auth/logout"
+        {"Authorization" $auth "Content-Type" "application/json"}
+        "{}")
+      nil))
+  (server_json {:success true :data {:loggedOut true}}))
+
+(defn handle-health [$req]
+  (res-ok {:status "ok" :service "akl-move" :version "1.0.0"}))
+
+; ── 세션 ────────────────────────────────────────────────────────
+(defn handle-list-sessions [$req]
+  (let [[$uid (get-uid $req)]]
+    (if (nil? $uid) (res-401)
+      (let [[$all  (dedupe (db-get "move_sessions") "id")]
+            [$mine (mine-only (active-only $all) $uid)]]
+        (res-ok $mine)))))
+
+(defn handle-post-session [$req]
+  (let [[$uid (get-uid $req)]]
+    (if (nil? $uid) (res-401)
+      (let [[$body (json_parse (server_req_body $req))]
+            [$entry (assoc (assoc (assoc (assoc (assoc (assoc (assoc (assoc (assoc (assoc (assoc (assoc {}
+                "id"        (str "ms-" (now_ms)))
+                "userId"    $uid)
+                "sport"     (or (get $body "sport") "walk"))
+                "startedAt" (or (get $body "startedAt") (now_iso)))
+                "endedAt"   (or (get $body "endedAt") (now_iso)))
+                "duration"  (or (get $body "duration") 0))
+                "distance"  (or (get $body "distance") 0))
+                "avgSpeed"  (or (get $body "avgSpeed") 0))
+                "calories"  (or (get $body "calories") 0))
+                "path"      (or (get $body "path") []))
+                "notes"     (or (get $body "notes") ""))
+                "weather"   (or (get $body "weather") ""))]]
+        (db-post "move_sessions" $entry)
+        (res-ok $entry)))))
+
+(defn handle-delete-session [$req]
+  (let [[$uid (get-uid $req)]]
+    (if (nil? $uid) (res-401)
+      (let [[$id (server_req_param $req "id")]
+            [$all (dedupe (db-get "move_sessions") "id")]
+            [$entry (first (filter (fn [$e] (= (get $e "id") $id)) $all))]]
+        (if (nil? $entry) (res-404 "세션 없음")
+          (if (not (= (get $entry "userId") $uid)) (res-401)
+            (let [[$soft (assoc $entry "deletedAt" (now_iso))]]
+              (db-post "move_sessions" $soft)
+              (res-ok {:deleted true}))))))))
+
+
+; ── 스케줄 ────────────────────────────────────────────────────
+(defn handle-list-schedules [$req]
+  (let [[$uid (get-uid $req)]]
+    (if (nil? $uid) (res-401)
+      (let [[$all (dedupe (db-get "move_schedules") "id")]
+            [$mine (mine-only (active-only $all) $uid)]]
+        (res-ok $mine)))))
+
+(defn handle-post-schedule [$req]
+  (let [[$uid (get-uid $req)]]
+    (if (nil? $uid) (res-401)
+      (let [[$body (json_parse (server_req_body $req))]
+            [$entry (assoc (assoc (assoc (assoc (assoc (assoc {}
+                "id"        (str "msch-" (now_ms)))
+                "userId"    $uid)
+                "sport"     (or (get $body "sport") "walk"))
+                "plannedAt" (or (get $body "plannedAt") (now_iso)))
+                "location"  (or (get $body "location") ""))
+                "notes"     (or (get $body "notes") ""))]]
+        (db-post "move_schedules" $entry)
+        (res-ok $entry)))))
+
+(defn handle-delete-schedule [$req]
+  (let [[$uid (get-uid $req)]]
+    (if (nil? $uid) (res-401)
+      (let [[$id (server_req_param $req "id")]
+            [$all (dedupe (db-get "move_schedules") "id")]
+            [$entry (first (filter (fn [$e] (= (get $e "id") $id)) $all))]]
+        (if (nil? $entry) (res-404 "없음")
+          (let [[$soft (assoc $entry "deletedAt" (now_iso))]]
+            (db-post "move_schedules" $soft)
+            (res-ok {:deleted true})))))))
+
+; ── 목표 ──────────────────────────────────────────────────────
+(defn handle-list-goals [$req]
+  (let [[$uid (get-uid $req)]]
+    (if (nil? $uid) (res-401)
+      (let [[$all (dedupe (db-get "move_goals") "id")]
+            [$mine (mine-only (active-only $all) $uid)]]
+        (res-ok $mine)))))
+
+(defn handle-post-goal [$req]
+  (let [[$uid (get-uid $req)]]
+    (if (nil? $uid) (res-401)
+      (let [[$body (json_parse (server_req_body $req))]
+            [$entry (assoc (assoc (assoc (assoc (assoc (assoc {}
+                "id"     (str "mgo-" (now_ms)))
+                "userId" $uid)
+                "period" (or (get $body "period") "month"))
+                "sport"  (or (get $body "sport") "all"))
+                "target" (or (get $body "target") 100))
+                "unit"   (or (get $body "unit") "km"))]]
+        (db-post "move_goals" $entry)
+        (res-ok $entry)))))
+
+(defn handle-delete-goal [$req]
+  (let [[$uid (get-uid $req)]]
+    (if (nil? $uid) (res-401)
+      (let [[$id (server_req_param $req "id")]
+            [$all (dedupe (db-get "move_goals") "id")]
+            [$entry (first (filter (fn [$e] (= (get $e "id") $id)) $all))]]
+        (if (nil? $entry) (res-404 "없음")
+          (let [[$soft (assoc $entry "deletedAt" (now_iso))]]
+            (db-post "move_goals" $soft)
+            (res-ok {:deleted true})))))))
+
+; ── 예산 ──────────────────────────────────────────────────────
+(defn handle-list-budgets [$req]
+  (let [[$uid (get-uid $req)]]
+    (if (nil? $uid) (res-401)
+      (let [[$all (dedupe (db-get "move_budgets") "id")]
+            [$mine (mine-only (active-only $all) $uid)]]
+        (res-ok $mine)))))
+
+(defn handle-post-budget [$req]
+  (let [[$uid (get-uid $req)]]
+    (if (nil? $uid) (res-401)
+      (let [[$body (json_parse (server_req_body $req))]
+            [$entry (assoc (assoc (assoc (assoc (assoc (assoc (assoc {}
+                "id"       (str "mbg-" (now_ms)))
+                "userId"   $uid)
+                "category" (or (get $body "category") "기타"))
+                "item"     (or (get $body "item") ""))
+                "amount"   (or (get $body "amount") 0))
+                "spentAt"  (or (get $body "spentAt") (now_iso)))
+                "notes"    (or (get $body "notes") ""))]]
+        (db-post "move_budgets" $entry)
+        (res-ok $entry)))))
+
+(defn handle-delete-budget [$req]
+  (let [[$uid (get-uid $req)]]
+    (if (nil? $uid) (res-401)
+      (let [[$id (server_req_param $req "id")]
+            [$all (dedupe (db-get "move_budgets") "id")]
+            [$entry (first (filter (fn [$e] (= (get $e "id") $id)) $all))]]
+        (if (nil? $entry) (res-404 "없음")
+          (let [[$soft (assoc $entry "deletedAt" (now_iso))]]
+            (db-post "move_budgets" $soft)
+            (res-ok {:deleted true})))))))
+
+
+; ── 날씨 (공공데이터포털 동네예보 프록시) ─────────────────────
+(define KMA_KEY "41NpNiA9jReg6/CzWVDJxJ1r+9+IBybpCkxBBU5uxTTAIpycbOwQAI1YNrW0SWNXb6fEEcGZtXyZtTws8EK7jQ==")
+
+(defn handle-weather [$req]
+  (let [[$nx (or (server_req_query $req "nx") "60")]
+        [$ny (or (server_req_query $req "ny") "127")]
+        [$base_date (or (server_req_query $req "base_date") "")]
+        [$base_time (or (server_req_query $req "base_time") "")]
+        [$url (str "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?serviceKey=41NpNiA9jReg6%2FCzWVDJxJ1r%2B9%2BIBybpCkxBBU5uxTTAIpycbOwQAI1YNrW0SWNXb6fEEcGZtXyZtTws8EK7jQ%3D%3D&pageNo=1&numOfRows=20&dataType=JSON&base_date=" $base_date
+                   "&base_time=" $base_time "&nx=" $nx "&ny=" $ny)]
+        [$res (http_get $url)]
+        [$body (get $res "body")]]
+    (assoc (server_status 200 $body) "contentType" "application/json; charset=utf-8")))
+
+
+; ── 일별 날씨 로그 ─────────────────────────────────────────────
+(defn handle-list-weather-log [$req]
+  (let [[$uid (get-uid $req)]]
+    (if (nil? $uid) (res-401)
+      (let [[$all (dedupe (db-get "move_weather_log") "id")]
+            [$mine (mine-only $all $uid)]]
+        (res-ok $mine)))))
+
+(defn handle-post-weather-log [$req]
+  (let [[$uid (get-uid $req)]]
+    (if (nil? $uid) (res-401)
+      (let [[$body (json_parse (server_req_body $req))]
+            [$date (or (get $body "date") "")]
+            [$entry (assoc (assoc (assoc (assoc {}
+                "id"      (str "wxl-" $uid "-" $date))
+                "userId"  $uid)
+                "date"    $date)
+                "weather" (or (get $body "weather") ""))]]
+        (db-post "move_weather_log" $entry)
+        (res-ok $entry)))))
+
+
+; ── 친구 시스템 ────────────────────────────────────────────────
+(defn handle-list-friends [$req]
+  (let [[$uid (get-uid $req)]]
+    (if (nil? $uid) (res-401)
+      (let [[$all (dedupe (db-get "move_friends") "id")]
+            [$mine (mine-only (active-only $all) $uid)]]
+        (res-ok $mine)))))
+
+(defn handle-post-friend [$req]
+  (let [[$uid (get-uid $req)]]
+    (if (nil? $uid) (res-401)
+      (let [[$body (json_parse (server_req_body $req))]
+            [$friendUid (or (get $body "friendUid") "")]
+            [$friendName (or (get $body "friendName") "친구")]
+            [$entry (assoc (assoc (assoc (assoc {}
+                "id"         (str "mfr-" (now_ms)))
+                "userId"     $uid)
+                "friendUid"  $friendUid)
+                "friendName" $friendName)]]
+        (db-post "move_friends" $entry)
+        (res-ok $entry)))))
+
+(defn handle-delete-friend [$req]
+  (let [[$uid (get-uid $req)]]
+    (if (nil? $uid) (res-401)
+      (let [[$id (server_req_param $req "id")]
+            [$all (dedupe (db-get "move_friends") "id")]
+            [$entry (first (filter (fn [$e] (= (get $e "id") $id)) $all))]]
+        (if (nil? $entry) (res-404 "없음")
+          (let [[$soft (assoc $entry "deletedAt" (now_iso))]]
+            (db-post "move_friends" $soft)
+            (res-ok {:deleted true})))))))
+
+; 친구의 sessions 요약 조회 (집계만, 경로 제외)
+(defn handle-friend-sessions [$req]
+  (let [[$uid (get-uid $req)]]
+    (if (nil? $uid) (res-401)
+      (let [[$friendUid (or (server_req_query $req "uid") "")]
+            [$all (dedupe (db-get "move_sessions") "id")]
+            [$active (active-only $all)]
+            [$friendSessions (filter (fn [$s] (= (get $s "userId") $friendUid)) $active)]
+            [$summary (map (fn [$s] (assoc (assoc (assoc (assoc (assoc (assoc {}
+                "startedAt" (get $s "startedAt"))
+                "sport"     (get $s "sport"))
+                "distance"  (get $s "distance"))
+                "duration"  (get $s "duration"))
+                "calories"  (get $s "calories"))
+                "weather"   (get $s "weather"))) $friendSessions)]]
+        (res-ok $summary)))))
+
+(defn handle-index [$req]
+  (assoc (server_html (file_read "public/index.html")) "headers" {"Cache-Control" "no-store, must-revalidate"}))
+
+(server_get  "/"                       "handle-index")
+(server_get  "/login"                  "handle-login-page")
+(server_post "/api/auth/login"         "handle-auth-login")
+(server_get  "/health"                 "handle-health")
+(server_get  "/api/auth/me"            "handle-auth-me")
+(server_post "/api/auth/logout"        "handle-auth-logout")
+
+(server_get    "/api/sessions"         "handle-list-sessions")
+(server_post   "/api/sessions"         "handle-post-session")
+(server_delete "/api/sessions/:id"     "handle-delete-session")
+
+
+(defn handle-sw [$req]
+  (let [[$content (file_read "public/sw.js")]]
+    (assoc (server_status 200 $content) "contentType" "application/javascript; charset=utf-8")))
+
+(defn handle-manifest [$req]
+  (let [[$content (file_read "public/manifest.json")]]
+    (assoc (server_status 200 $content) "contentType" "application/manifest+json; charset=utf-8")))
+
+(defn handle-icon [$req]
+  (let [[$name (server_req_param $req "name")]
+        [$path (str "public/icons/" $name)]
+        [$content (file_read $path)]]
+    (if (nil? $content) (res-404 "icon not found")
+      (assoc (server_status 200 $content) "contentType" "image/svg+xml"))))
+
+
+(server_get    "/api/schedules"        "handle-list-schedules")
+(server_post   "/api/schedules"        "handle-post-schedule")
+(server_delete "/api/schedules/:id"    "handle-delete-schedule")
+(server_get    "/api/goals"            "handle-list-goals")
+(server_post   "/api/goals"            "handle-post-goal")
+(server_delete "/api/goals/:id"        "handle-delete-goal")
+(server_get    "/api/budgets"          "handle-list-budgets")
+(server_post   "/api/budgets"          "handle-post-budget")
+(server_delete "/api/budgets/:id"      "handle-delete-budget")
+
+(server_get    "/api/friends"          "handle-list-friends")
+(server_post   "/api/friends"          "handle-post-friend")
+(server_delete "/api/friends/:id"      "handle-delete-friend")
+(server_get    "/api/friend-sessions"  "handle-friend-sessions")
+(server_get  "/api/weather-log"  "handle-list-weather-log")
+(server_post "/api/weather-log"  "handle-post-weather-log")
+(server_get "/api/weather" "handle-weather")
+(server_get "/sw.js" "handle-sw")
+(server_get "/manifest.json" "handle-manifest")
+(server_get "/icons/:name" "handle-icon")
+
+(server_start PORT)
+(println (str "🏃 AKL Move listening on " PORT))
