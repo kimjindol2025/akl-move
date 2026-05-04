@@ -5,10 +5,11 @@
 
 (define PORT 39060)
 (define USERINFO_URL "http://localhost:39000/api/auth/userinfo")
+(define DB "/root/kim/akl-move/data/move.sqlite")
 
-(load "/home/kimjin/services/akl-lib/mariadb.fl")
-(load "/home/kimjin/services/akl-lib/auth.fl")
-(load "/home/kimjin/services/akl-lib/response.fl")
+(load "/root/kim/akl-lib/mariadb.fl")
+(load "/root/kim/akl-lib/auth.fl")
+(load "/root/kim/akl-lib/response.fl")
 
 (defn active-only [$items] (filter (fn [$it] (nil? (get $it "deletedAt"))) $items))
 (defn mine-only [$items $uid] (filter (fn [$it] (= (get $it "userId") $uid)) $items))
