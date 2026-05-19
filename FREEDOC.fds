@@ -1,20 +1,26 @@
 FREEDOC {
-  version: 1
-  spec: "2026-05"
+  version: 2
+  entry: app/server.fl
 }
-
 IDENTITY {
-  what: akl-move
-  domain: akl-platform
-  lang: nodejs
+  what: akl_move
+  domain: akl_platform
+  lang: freelang_v11
+  purpose: gps_activity_tracker
 }
-
 POSITION {
-  status: in_progress
-  current: production
+  status: done
+  stage: "production"
+  current: session_record_stats
+  next: [live_tracking, challenge]
+  note: "걷기·달리기·자전거 GPS 트래커. 세션기록·통계·랭킹. port 39060"
 }
-
 MAP {
-  entry: index.js
+  entry: app/server.fl
+  lib: ../akl-lib
 }
-
+FIXED {
+  port: 39060
+  db: mariadb
+  activity_types: [walk, run, bike]
+}
